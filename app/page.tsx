@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -32,7 +31,13 @@ import {
 
 const teams = [
   { name: "Arsenal", short: "ARS", color: "#EF4444", points: 18, played: 8 },
-  { name: "Real Madrid", short: "RMA", color: "#F5C451", points: 16, played: 8 },
+  {
+    name: "Real Madrid",
+    short: "RMA",
+    color: "#F5C451",
+    points: 16,
+    played: 8,
+  },
   { name: "Man City", short: "MCI", color: "#38BDF8", points: 15, played: 8 },
   { name: "Bayern", short: "BAY", color: "#F87171", points: 14, played: 8 },
 ];
@@ -306,7 +311,9 @@ function DashboardPreview() {
         </span>
         <div>
           <p className="text-[11px] font-semibold text-white">Season control</p>
-          <p className="mt-0.5 text-[9px] text-[#8793a3]">Every result matters</p>
+          <p className="mt-0.5 text-[9px] text-[#8793a3]">
+            Every result matters
+          </p>
         </div>
       </motion.div>
     </div>
@@ -443,9 +450,7 @@ export default function Home() {
             transition={{ duration: 0.65, ease: "easeOut" }}
             className="relative z-10 max-w-2xl"
           >
-            <SectionLabel icon={Sparkles}>
-              FOOTBALL, REIMAGINED
-            </SectionLabel>
+            <SectionLabel icon={Sparkles}>FOOTBALL, REIMAGINED</SectionLabel>
 
             <h1 className="text-[clamp(2.7rem,7.2vw,5.7rem)] font-semibold leading-[0.99] tracking-[-0.075em] text-white">
               The game is
@@ -470,9 +475,9 @@ export default function Home() {
             </h1>
 
             <p className="mt-7 max-w-lg text-sm leading-7 text-[#a0abba] sm:text-base sm:leading-8">
-              Create competitions, simulate matches, manage fixtures, and
-              follow every result. Build your football universe with one
-              powerful simulation experience.
+              Create competitions, simulate matches, manage fixtures, and follow
+              every result. Build your football universe with one powerful
+              simulation experience.
             </p>
 
             <div className="mt-9 flex flex-col gap-3 min-[420px]:flex-row">
@@ -513,7 +518,9 @@ export default function Home() {
           </motion.div>
 
           <motion.div
-            initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.97, y: 18 }}
+            initial={
+              shouldReduceMotion ? false : { opacity: 0, scale: 0.97, y: 18 }
+            }
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.75, delay: 0.12, ease: "easeOut" }}
             className="relative"
@@ -558,9 +565,7 @@ export default function Home() {
             {features.map((feature, index) => (
               <motion.article
                 key={feature.number}
-                initial={
-                  shouldReduceMotion ? false : { opacity: 0, y: 18 }
-                }
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 18 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.15 }}
                 transition={{
@@ -638,9 +643,7 @@ export default function Home() {
               {steps.map((step, index) => (
                 <motion.div
                   key={step.number}
-                  initial={
-                    shouldReduceMotion ? false : { opacity: 0, x: 15 }
-                  }
+                  initial={shouldReduceMotion ? false : { opacity: 0, x: 15 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true, amount: 0.2 }}
                   transition={{
@@ -690,15 +693,14 @@ export default function Home() {
               <h2 className="text-3xl font-semibold leading-tight tracking-[-0.06em] text-white sm:text-4xl lg:text-5xl">
                 Your football ideas
                 <br />
-                deserve a{" "}
-                <span className="text-[#b7f56a]">proper pitch.</span>
+                deserve a <span className="text-[#b7f56a]">proper pitch.</span>
               </h2>
               <p className="mt-5 max-w-xl text-sm leading-7 text-[#98a4b3] sm:text-base sm:leading-8">
                 FootballSim is built around one idea: give football fans a
                 clear, practical way to create competitions and explore match
                 outcomes. Whether you are organizing a tournament or
-                experimenting with a league format, the experience stays
-                focused on the game.
+                experimenting with a league format, the experience stays focused
+                on the game.
               </p>
             </div>
 
