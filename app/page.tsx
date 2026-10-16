@@ -1,129 +1,137 @@
+
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import {
-  AnimatePresence,
-  motion,
-  useMotionValueEvent,
-  useReducedMotion,
-  useScroll,
-  useSpring,
-} from "framer-motion";
-import {
+  Activity,
   ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
   BarChart3,
-  Bell,
-  CalendarDays,
   Check,
-  ChevronDown,
-  CircleHelp,
-  Crown,
-  Gamepad2,
-  Goal,
+  ChevronRight,
+  CirclePlay,
+  Clock3,
   Menu,
-  MousePointer2,
-  Play,
   ShieldCheck,
   Sparkles,
-  Swords,
+  Target,
   Trophy,
-  Users,
   X,
   Zap,
 } from "lucide-react";
 
+const ACCENT = "#B7F56A";
+
 const teams = [
-  { name: "Arsenal", short: "ARS", color: "#EF4444", points: 18, played: 8 },
   {
+    position: 1,
     name: "Real Madrid",
-    short: "RMA",
-    color: "#F5C451",
-    points: 16,
-    played: 8,
+    short: "RM",
+    color: "#F5F5F5",
+    text: "#171717",
+    played: 5,
+    gd: "+9",
+    points: 13,
   },
-  { name: "Man City", short: "MCI", color: "#38BDF8", points: 15, played: 8 },
-  { name: "Bayern", short: "BAY", color: "#F87171", points: 14, played: 8 },
+  {
+    position: 2,
+    name: "Arsenal",
+    short: "ARS",
+    color: "#E84B5F",
+    text: "#FFFFFF",
+    played: 5,
+    gd: "+7",
+    points: 12,
+  },
+  {
+    position: 3,
+    name: "Man. City",
+    short: "MCI",
+    color: "#79C9F5",
+    text: "#10233A",
+    played: 5,
+    gd: "+5",
+    points: 10,
+  },
+  {
+    position: 4,
+    name: "Bayern",
+    short: "FCB",
+    color: "#E83D4F",
+    text: "#FFFFFF",
+    played: 5,
+    gd: "+3",
+    points: 9,
+  },
 ];
 
 const features = [
   {
     number: "01",
-    icon: Swords,
-    title: "Realistic match simulation",
+    icon: Trophy,
+    title: "Competition management",
     description:
-      "Simulate fixtures and experience football outcomes shaped by team strength, tactics, and match events.",
-    tag: "MATCH ENGINE",
+      "Create tournaments, organize clubs, configure competition formats, and manage every stage from one workspace.",
+    tag: "YOUR TOURNAMENT",
   },
   {
     number: "02",
-    icon: BarChart3,
-    title: "Live league standings",
+    icon: Target,
+    title: "Intelligent fixtures",
     description:
-      "Follow points, goal difference, wins, and losses with standings that update as matches are completed.",
-    tag: "LEAGUE DATA",
+      "Generate fixtures with competition-aware pairing logic and keep every round organized from kickoff to finish.",
+    tag: "EVERY MATCH MATTERS",
   },
   {
     number: "03",
-    icon: Users,
-    title: "Build your competition",
+    icon: Zap,
+    title: "Football simulation",
     description:
-      "Manage teams, create competitions, and set up your own football universe from the ground up.",
-    tag: "COMPETITION BUILDER",
+      "Run fixtures through your football engine and see how each result changes the course of your competition.",
+    tag: "LET THE GAME BEGIN",
   },
   {
     number: "04",
-    icon: Trophy,
-    title: "Track every result",
+    icon: BarChart3,
+    title: "Standings and insights",
     description:
-      "Keep your fixtures, results, and competition progress organized in one central dashboard.",
-    tag: "SEASON TRACKING",
-  },
-  {
-    number: "05",
-    icon: CalendarDays,
-    title: "Fixture management",
-    description:
-      "Generate fixtures and keep your competition schedule easy to follow from the first match to the last.",
-    tag: "FIXTURE CONTROL",
-  },
-  {
-    number: "06",
-    icon: Zap,
-    title: "Fast, focused workflow",
-    description:
-      "Move from setting up a competition to simulating matches without unnecessary steps or clutter.",
-    tag: "BUILT FOR SPEED",
+      "Follow points, goal difference, results, and qualification positions through clear competition statistics.",
+    tag: "KNOW THE NUMBERS",
   },
 ];
 
 const steps = [
   {
     number: "01",
-    title: "Create your competition",
+    title: "Set up your competition",
     description:
-      "Start a new football competition and configure it to match your preferred format.",
+      "Name your tournament, choose a supported format, and define how your competition should run.",
+    icon: Trophy,
   },
   {
     number: "02",
-    title: "Add your teams",
+    title: "Build your lineup",
     description:
-      "Choose the teams you want to compete and prepare your tournament structure.",
+      "Add participating clubs and prepare your teams for the competition ahead.",
+    icon: Target,
   },
   {
     number: "03",
-    title: "Simulate and follow",
+    title: "Generate and simulate",
     description:
-      "Generate fixtures, simulate matches, and follow the standings as your season develops.",
+      "Create fixtures, run matchdays, and follow the results as your table develops.",
+    icon: Activity,
   },
-];
-
-const navLinks = [
-  { label: "Features", href: "#features", id: "features" },
-  { label: "How it works", href: "#how-it-works", id: "how-it-works" },
-  { label: "About", href: "#about", id: "about" },
+  {
+    number: "04",
+    title: "Follow the final result",
+    description:
+      "Track the standings, monitor qualification, and complete your tournament journey.",
+    icon: Sparkles,
+  },
 ];
 
 function Brand({ compact = false }: { compact?: boolean }) {
@@ -131,20 +139,20 @@ function Brand({ compact = false }: { compact?: boolean }) {
     <Link
       href="/"
       aria-label="FootballSim home"
-      className="group inline-flex shrink-0 items-center gap-2.5"
+      className="group inline-flex shrink-0 items-center gap-3"
     >
-      <span className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-[#b7f56a]/25 bg-[#b7f56a]/10 text-[#b7f56a] transition duration-300 group-hover:border-[#b7f56a]/60 group-hover:bg-[#b7f56a]/15">
-        <Goal size={23} strokeWidth={1.8} />
-        <span className="absolute -bottom-2 -right-2 h-5 w-5 rounded-full bg-[#b7f56a]/15 blur-md" />
+      <span className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-[13px] bg-[#B7F56A] text-[#08090D] shadow-[0_0_28px_rgba(183,245,106,0.08)] transition-transform duration-300 group-hover:rotate-[-5deg]">
+        <Trophy size={21} strokeWidth={2.2} />
+        <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-[2.5px] border-[#08090D] bg-white" />
       </span>
 
       <span className="flex flex-col">
-        <span className="text-[15px] font-bold tracking-[-0.04em] text-white">
-          Football<span className="text-[#b7f56a]">Sim</span>
+        <span className="text-[19px] font-bold tracking-[-0.9px] text-white">
+          Football<span className="text-[#B7F56A]">Sim</span>
         </span>
         {!compact && (
-          <span className="mt-0.5 text-[9px] font-medium uppercase tracking-[0.22em] text-[#748092]">
-            Your football universe
+          <span className="mt-[-2px] text-[9px] font-semibold uppercase tracking-[2.2px] text-[#737D8B]">
+            Control the game
           </span>
         )}
       </span>
@@ -152,17 +160,14 @@ function Brand({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function SectionLabel({
-  children,
-  icon: Icon = Sparkles,
-}: {
-  children: ReactNode;
-  icon?: typeof Sparkles;
-}) {
+function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/[0.09] bg-white/[0.035] px-3.5 py-2">
-      <Icon size={13} className="text-[#b7f56a]" />
-      <span className="text-[10px] font-semibold uppercase tracking-[0.19em] text-[#aeb8c7]">
+    <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-white/[0.09] bg-white/[0.035] px-3.5 py-2">
+      <span className="relative flex h-2 w-2">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#B7F56A]/40" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-[#B7F56A]" />
+      </span>
+      <span className="text-[10px] font-semibold uppercase tracking-[1.8px] text-[#B9C1CD]">
         {children}
       </span>
     </div>
@@ -171,473 +176,339 @@ function SectionLabel({
 
 function DashboardPreview() {
   return (
-    <div className="relative mx-auto w-full max-w-[590px]">
-      <div className="absolute -inset-8 rounded-[40px] bg-[#b7f56a]/[0.06] blur-3xl" />
+    <div className="relative mx-auto w-full max-w-[620px]">
+      <div className="pointer-events-none absolute -inset-10 rounded-full bg-[#B7F56A]/[0.055] blur-[90px]" />
 
-      <div className="relative overflow-hidden rounded-[22px] border border-white/[0.12] bg-[#0b1016] shadow-[0_30px_100px_rgba(0,0,0,0.5)]">
-        <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3.5 sm:px-5">
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[#ff6d68]/80" />
-              <span className="h-2 w-2 rounded-full bg-[#f3c969]/80" />
-              <span className="h-2 w-2 rounded-full bg-[#b7f56a]/80" />
+      <div className="relative overflow-hidden rounded-[20px] border border-white/[0.12] bg-[#0D1016] shadow-[0_35px_110px_rgba(0,0,0,0.52)] sm:rounded-[24px]">
+        <div className="flex h-[58px] items-center justify-between border-b border-white/[0.07] px-4 sm:px-5">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="flex shrink-0 gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#FF625B]/85" />
+              <span className="h-2 w-2 rounded-full bg-[#FFC44F]/85" />
+              <span className="h-2 w-2 rounded-full bg-[#B7F56A]/85" />
             </div>
-            <span className="ml-2 text-[10px] font-medium text-[#778294]">
-              FootballSim / Dashboard
+            <span className="truncate text-[10px] font-medium text-[#8A93A1]">
+              FootballSim / Arena
             </span>
           </div>
 
-          <div className="flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04]">
-            <Bell size={13} className="text-[#9ba7b7]" />
+          <div className="flex shrink-0 items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.035] px-2.5 py-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#B7F56A]" />
+            <span className="text-[9px] font-semibold tracking-[0.6px] text-[#CFD4DE]">
+              PREVIEW
+            </span>
           </div>
         </div>
 
         <div className="p-4 sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.17em] text-[#8490a0]">
-                Competition overview
+              <p className="text-[9px] font-semibold uppercase tracking-[1.9px] text-[#818B99]">
+                Competition workspace
               </p>
-              <h3 className="mt-2 text-xl font-semibold tracking-[-0.05em] text-white sm:text-2xl">
+              <h3 className="mt-2 text-xl font-semibold tracking-[-0.8px] text-white sm:text-[25px]">
                 Champions League
               </h3>
-              <p className="mt-1 text-xs text-[#7c8797]">
-                2026 season · League phase
+              <p className="mt-1.5 text-[11px] text-[#858E9C]">
+                2026 / 27 season <span className="mx-1.5 text-[#4D5663]">/</span>{" "}
+                League phase
               </p>
             </div>
 
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#b7f56a]/20 bg-[#b7f56a]/[0.08] px-3 py-1.5 text-[10px] font-semibold text-[#b7f56a]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#b7f56a]" />
-              Competition active
+            <span className="rounded-lg border border-[#B7F56A]/20 bg-[#B7F56A]/[0.08] px-3 py-2 text-[9px] font-bold tracking-[0.7px] text-[#B7F56A]">
+              MATCHDAY 06
             </span>
           </div>
 
-          <div className="mt-6 grid grid-cols-3 gap-2.5 sm:gap-3">
+          <div className="mt-6 grid grid-cols-3 gap-2.5">
             {[
-              { label: "TEAMS", value: "36", icon: Users },
-              { label: "MATCHES", value: "144", icon: Gamepad2 },
-              { label: "PLAYED", value: "86", icon: Check },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 sm:p-4"
-              >
-                <stat.icon size={15} className="text-[#b7f56a]" />
-                <p className="mt-3 text-xl font-semibold tracking-[-0.05em] text-white sm:text-2xl">
-                  {stat.value}
-                </p>
-                <p className="mt-1 text-[9px] font-medium tracking-[0.12em] text-[#7b8797] sm:text-[10px]">
-                  {stat.label}
-                </p>
-              </div>
-            ))}
+              { label: "TEAMS", value: "08", icon: Trophy },
+              { label: "PLAYED", value: "20", icon: Activity },
+              { label: "GOALS", value: "57", icon: Target },
+            ].map((stat) => {
+              const Icon = stat.icon;
+
+              return (
+                <div
+                  key={stat.label}
+                  className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 transition-colors hover:border-white/[0.13] sm:p-4"
+                >
+                  <Icon size={15} className="mb-3 text-[#B7F56A]/80" />
+                  <p className="text-xl font-semibold tracking-[-0.8px] text-white sm:text-2xl">
+                    {stat.value}
+                  </p>
+                  <p className="mt-1 text-[9px] font-semibold tracking-[1.2px] text-[#77818F]">
+                    {stat.label}
+                  </p>
+                </div>
+              );
+            })}
           </div>
 
-          <div className="mt-5 overflow-hidden rounded-xl border border-white/[0.07]">
-            <div className="flex items-center justify-between border-b border-white/[0.07] bg-white/[0.025] px-3.5 py-3 sm:px-4">
-              <span className="text-xs font-semibold text-white">
-                League standings
-              </span>
-              <span className="text-[10px] text-[#7d8999]">Top teams</span>
-            </div>
-
-            <div className="px-3.5 sm:px-4">
-              <div className="grid grid-cols-[1fr_35px_35px] gap-2 border-b border-white/[0.06] py-2.5 text-[9px] font-medium uppercase tracking-[0.12em] text-[#6f7b8b]">
-                <span>Club</span>
-                <span className="text-center">P</span>
-                <span className="text-center">Pts</span>
+          <div className="mt-5 rounded-xl border border-white/[0.07] bg-[#11141B] p-3.5 sm:p-4">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h4 className="text-sm font-semibold text-white">
+                  League standings
+                </h4>
+                <p className="mt-1 text-[10px] text-[#7D8795]">
+                  Competition ranking
+                </p>
               </div>
 
-              {teams.map((team, index) => (
+              <span className="inline-flex shrink-0 items-center gap-1 text-[9px] font-semibold tracking-[0.6px] text-[#B7F56A]">
+                SAMPLE TABLE <ArrowUpRight size={12} />
+              </span>
+            </div>
+
+            <div className="grid grid-cols-[25px_minmax(0,1fr)_35px_35px] gap-2 border-b border-white/[0.07] pb-2 text-[9px] font-semibold tracking-[1px] text-[#727C8A] sm:grid-cols-[30px_minmax(0,1fr)_45px_45px]">
+              <span>POS</span>
+              <span>CLUB</span>
+              <span className="text-center">GD</span>
+              <span className="text-right">PTS</span>
+            </div>
+
+            <div className="divide-y divide-white/[0.045]">
+              {teams.map((team) => (
                 <div
-                  key={team.short}
-                  className="grid grid-cols-[1fr_35px_35px] items-center gap-2 border-b border-white/[0.045] py-3 last:border-0"
+                  key={team.name}
+                  className="grid grid-cols-[25px_minmax(0,1fr)_35px_35px] items-center gap-2 py-3 sm:grid-cols-[30px_minmax(0,1fr)_45px_45px] sm:py-3.5"
                 >
+                  <span className="text-xs font-semibold text-[#B7F56A]">
+                    {String(team.position).padStart(2, "0")}
+                  </span>
+
                   <div className="flex min-w-0 items-center gap-2.5">
-                    <span className="w-3 text-[10px] text-[#738092]">
-                      {index + 1}
-                    </span>
                     <span
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[8px] font-extrabold text-[#0b1016]"
-                      style={{ backgroundColor: team.color }}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[8px] font-extrabold"
+                      style={{
+                        backgroundColor: team.color,
+                        color: team.text,
+                      }}
                     >
                       {team.short}
                     </span>
-                    <span className="truncate text-xs font-medium text-[#dce2ea]">
+                    <span className="truncate text-xs font-medium text-[#E7EAF0]">
                       {team.name}
                     </span>
                   </div>
-                  <span className="text-center text-xs text-[#a0abba]">
-                    {team.played}
+
+                  <span className="text-center text-xs tabular-nums text-[#929BA8]">
+                    {team.gd}
                   </span>
-                  <span className="text-center text-xs font-semibold text-white">
+                  <span className="text-right text-sm font-semibold tabular-nums text-white">
                     {team.points}
                   </span>
                 </div>
               ))}
             </div>
+
+            <div className="mt-3 flex items-center gap-2 border-t border-white/[0.06] pt-3">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#B7F56A]" />
+              <span className="text-[9px] text-[#818B99]">
+                Illustrative standings for interface preview
+              </span>
+            </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#b7f56a]/15 bg-[#b7f56a]/[0.045] p-3.5">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#b7f56a]/10 text-[#b7f56a]">
-                <Trophy size={15} />
-              </span>
-              <div>
-                <p className="text-[11px] font-semibold text-white">
-                  Your competition. Your rules.
+          <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-[#B7F56A]/15 bg-[#B7F56A]/[0.045] p-3.5 sm:p-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#B7F56A]/10">
+                <Zap size={17} className="text-[#B7F56A]" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-white">
+                  The next matchday awaits
                 </p>
-                <p className="mt-0.5 text-[10px] text-[#8995a4]">
-                  Manage every stage in one place.
+                <p className="mt-1 text-[10px] text-[#8E98A7]">
+                  Your competition, your control
                 </p>
               </div>
             </div>
-            <ArrowUpRight size={16} className="text-[#b7f56a]" />
+
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#B7F56A] px-3 py-2 text-[9px] font-extrabold tracking-[0.5px] text-[#08090D]">
+              SIMULATE <ArrowRight size={12} />
+            </span>
           </div>
+
+          <p className="mt-3 text-center text-[9px] text-[#66707E]">
+            Illustrative interface · Not live competition data
+          </p>
         </div>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.7 }}
-        className="absolute -left-3 top-[22%] hidden items-center gap-2.5 rounded-xl border border-white/[0.12] bg-[#111821] px-3.5 py-3 shadow-xl sm:flex md:-left-8"
-      >
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#b7f56a]/10 text-[#b7f56a]">
-          <Zap size={16} />
-        </span>
-        <div>
-          <p className="text-[11px] font-semibold text-white">Match engine</p>
-          <p className="mt-0.5 text-[9px] text-[#8793a3]">Ready to simulate</p>
+      <div className="absolute -right-3 top-[17%] hidden items-center gap-2.5 rounded-xl border border-white/10 bg-[#151922]/95 p-3.5 shadow-xl backdrop-blur-xl sm:flex sm:-right-7">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#B7F56A]/10">
+          <Activity size={17} className="text-[#B7F56A]" />
         </div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.9 }}
-        className="absolute -right-3 bottom-[18%] hidden items-center gap-2.5 rounded-xl border border-white/[0.12] bg-[#111821] px-3.5 py-3 shadow-xl sm:flex md:-right-7"
-      >
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f3c969]/10 text-[#f3c969]">
-          <Crown size={16} />
-        </span>
         <div>
-          <p className="text-[11px] font-semibold text-white">Season control</p>
-          <p className="mt-0.5 text-[9px] text-[#8793a3]">
-            Every result matters
+          <p className="text-[10px] text-[#8C95A3]">Competition tools</p>
+          <p className="mt-1 text-xs font-semibold text-white">
+            One focused workspace
           </p>
         </div>
-      </motion.div>
+      </div>
+
+      <div className="absolute -bottom-5 -left-2 hidden items-center gap-2.5 rounded-xl border border-white/10 bg-[#151922]/95 p-3 shadow-xl backdrop-blur-xl sm:flex sm:-left-5">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#B7F56A]/10">
+          <BarChart3 size={16} className="text-[#B7F56A]" />
+        </div>
+        <div>
+          <p className="text-[10px] text-[#8C95A3]">Competition overview</p>
+          <p className="mt-0.5 text-xs font-semibold text-white">
+            Every point counts
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
 
-function Navbar() {
+export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [active, setActive] = useState("");
   const shouldReduceMotion = useReducedMotion();
 
-  const { scrollY, scrollYProgress } = useScroll();
-  const progress = useSpring(scrollYProgress, {
-    stiffness: 140,
-    damping: 30,
-    mass: 0.2,
-  });
-
-  useMotionValueEvent(scrollY, "change", (y) => {
-    setScrolled(y > 16);
-    if (y < 120) setActive("");
-  });
-
-  // Highlight the section currently in view
-  useEffect(() => {
-    const sections = navLinks
-      .map((l) => document.getElementById(l.id))
-      .filter(Boolean) as HTMLElement[];
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) setActive(entry.target.id);
-        });
-      },
-      { rootMargin: "-40% 0px -55% 0px" },
-    );
-
-    sections.forEach((s) => observer.observe(s));
-    return () => observer.disconnect();
-  }, []);
-
-  // Escape to close + close when resizing to desktop
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
-    const onResize = () => window.innerWidth >= 768 && setMenuOpen(false);
-    window.addEventListener("keydown", onKey);
-    window.addEventListener("resize", onResize);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("resize", onResize);
-    };
-  }, []);
-
-  // Lock body scroll while the mobile menu is open
-  useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [menuOpen]);
-
-  const closeMenu = () => setMenuOpen(false);
+  const motionDuration = shouldReduceMotion ? 0 : 0.6;
+  const navItems = [
+    { label: "Features", href: "#features" },
+    { label: "How it works", href: "#how-it-works" },
+    { label: "Platform", href: "#platform" },
+  ];
 
   return (
-    <>
-      <motion.header
-        initial={shouldReduceMotion ? false : { y: -90, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed inset-x-0 top-0 z-50"
-      >
-        {/* Background layer (kept separate so backdrop-blur doesn't trap children) */}
-        <div
-          className={`pointer-events-none absolute inset-0 border-b transition-all duration-500 ${
-            scrolled || menuOpen
-              ? "border-white/[0.09] bg-[#070a0e]/80 shadow-[0_10px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl"
-              : "border-transparent bg-transparent backdrop-blur-0"
-          }`}
-        />
-
-        <motion.div
-          animate={{ height: scrolled ? 64 : 76 }}
-          transition={{ duration: 0.35, ease: "easeOut" }}
-          className="relative mx-auto flex max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10"
+    <main className="min-h-screen overflow-x-clip bg-[#08090D] font-sans text-white selection:bg-[#B7F56A] selection:text-[#08090D]">
+      <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#08090D]/85 backdrop-blur-2xl">
+        <nav
+          className="mx-auto flex h-[72px] max-w-[1320px] items-center justify-between px-5 sm:px-8 lg:px-12"
+          aria-label="Main navigation"
         >
           <Brand />
 
-          {/* Desktop nav */}
-          <nav className="relative hidden items-center gap-1 md:flex">
-            {navLinks.map((link) => {
-              const isActive = active === link.id;
-              return (
-                <Link
-                  key={link.id}
-                  href={link.href}
-                  className={`relative rounded-full px-4 py-2 text-xs font-medium transition-colors duration-300 ${
-                    isActive ? "text-white" : "text-[#9ca7b6] hover:text-white"
-                  }`}
-                >
-                  {isActive && (
-                    <motion.span
-                      layoutId="nav-active-pill"
-                      className="absolute inset-0 rounded-full border border-white/[0.09] bg-white/[0.06]"
-                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                    />
-                  )}
-                  <span className="relative">{link.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
+          <div className="hidden items-center gap-8 md:flex">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="text-[12px] font-medium text-[#9CA5B2] transition-colors hover:text-white"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
 
-          <div className="hidden items-center gap-5 md:flex">
+          <div className="hidden items-center gap-3 md:flex">
             <Link
               href="/login"
-              className="text-xs font-semibold text-[#c4ccd6] transition hover:text-white"
+              className="rounded-lg px-4 py-2.5 text-[12px] font-semibold text-[#C7CDD6] transition-colors hover:text-white"
             >
-              Log in
+              Sign in
             </Link>
             <Link
               href="/signup"
-              className="group inline-flex h-10 items-center gap-2 rounded-lg bg-[#b7f56a] px-4 text-xs font-bold text-[#10150a] shadow-[0_0_25px_rgba(183,245,106,0.12)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#c9ff87]"
+              className="group inline-flex items-center gap-2 rounded-lg bg-[#B7F56A] px-4 py-3 text-[12px] font-bold text-[#08090D] transition-all duration-200 hover:bg-[#CAFF8D] hover:shadow-[0_0_25px_rgba(183,245,106,0.12)]"
             >
               Get started
               <ArrowUpRight
-                size={14}
-                className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                size={15}
+                className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
               />
             </Link>
           </div>
 
-          {/* Mobile toggle */}
           <button
             type="button"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((v) => !v)}
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-white md:hidden"
+            aria-controls="mobile-navigation"
+            onClick={() => setMenuOpen((open) => !open)}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.025] text-white transition-colors hover:bg-white/[0.07] md:hidden"
           >
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.span
-                key={menuOpen ? "close" : "open"}
-                initial={{ rotate: -90, opacity: 0, scale: 0.7 }}
-                animate={{ rotate: 0, opacity: 1, scale: 1 }}
-                exit={{ rotate: 90, opacity: 0, scale: 0.7 }}
-                transition={{ duration: 0.18 }}
-                className="flex"
-              >
-                {menuOpen ? <X size={19} /> : <Menu size={19} />}
-              </motion.span>
-            </AnimatePresence>
+            {menuOpen ? <X size={19} /> : <Menu size={19} />}
           </button>
-        </motion.div>
+        </nav>
 
-        {/* Scroll progress bar */}
-        <motion.div
-          style={{ scaleX: progress }}
-          className="absolute bottom-0 left-0 h-px w-full origin-left bg-gradient-to-r from-[#b7f56a]/0 via-[#b7f56a] to-[#c9ff87]"
-        />
-
-        {/* Mobile menu */}
-        <AnimatePresence>
-          {menuOpen && (
-            <motion.div
-              key="mobile-menu"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              className="relative overflow-hidden border-t border-white/[0.07] md:hidden"
-            >
-              <nav className="mx-auto flex max-w-7xl flex-col gap-1 px-5 py-5">
-                {navLinks.map((item, i) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, x: -14 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.08 + i * 0.06, duration: 0.3 }}
-                  >
-                    <Link
-                      href={item.href}
-                      onClick={closeMenu}
-                      className={`flex items-center justify-between rounded-lg px-3 py-3 text-sm transition ${
-                        active === item.id
-                          ? "bg-white/[0.05] text-white"
-                          : "text-[#b6c0ce] hover:bg-white/[0.04] hover:text-white"
-                      }`}
-                    >
-                      {item.label}
-                      <ArrowUpRight size={15} className="text-[#667384]" />
-                    </Link>
-                  </motion.div>
-                ))}
-
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3, duration: 0.3 }}
-                  className="mt-3 grid grid-cols-2 gap-3 border-t border-white/[0.07] pt-4"
-                >
-                  <Link
-                    href="/login"
-                    onClick={closeMenu}
-                    className="flex h-11 items-center justify-center rounded-lg border border-white/10 text-sm font-semibold text-white"
-                  >
-                    Log in
-                  </Link>
-                  <Link
-                    href="/signup"
-                    onClick={closeMenu}
-                    className="flex h-11 items-center justify-center gap-2 rounded-lg bg-[#b7f56a] text-sm font-bold text-[#10150a]"
-                  >
-                    Get started
-                    <ArrowRight size={15} />
-                  </Link>
-                </motion.div>
-              </nav>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.header>
-
-      {/* Tap-outside backdrop for mobile menu */}
-      <AnimatePresence>
         {menuOpen && (
-          <motion.div
-            key="backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={closeMenu}
-            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
-          />
-        )}
-      </AnimatePresence>
-    </>
-  );
-}
-
-export default function Home() {
-  const [year, setYear] = useState<number | null>(null);
-  const shouldReduceMotion = useReducedMotion();
-
-  useEffect(() => {
-    setYear(new Date().getFullYear());
-  }, []);
-
-  const reveal = shouldReduceMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 22 },
-        whileInView: { opacity: 1, y: 0 },
-        viewport: { once: true, amount: 0.15 },
-        transition: { duration: 0.55, ease: "easeOut" as const },
-      };
-
-  return (
-    <main className="min-h-screen overflow-x-clip bg-[#070a0e] text-white selection:bg-[#b7f56a] selection:text-[#070a0e]">
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(183,245,106,0.075),transparent_45%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:linear-gradient(to_bottom,black,transparent_75%)]" />
-      </div>
-
-      <Navbar />
-      <div className="h-[76px]" aria-hidden="true" />
-
-      <section className="relative z-10 px-5 pb-20 pt-16 sm:px-8 sm:pb-28 sm:pt-24 lg:px-10 lg:pb-32 lg:pt-28">
-        <div className="mx-auto grid max-w-7xl items-center gap-16 lg:grid-cols-[0.92fr_1.08fr] lg:gap-12">
-          <motion.div
-            initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.65, ease: "easeOut" }}
-            className="relative z-10 max-w-2xl"
+          <div
+            id="mobile-navigation"
+            className="border-t border-white/[0.07] bg-[#0C0E13] px-5 py-5 md:hidden"
           >
-            <SectionLabel icon={Sparkles}>FOOTBALL, REIMAGINED</SectionLabel>
-
-            <h1 className="text-[clamp(2.7rem,7.2vw,5.7rem)] font-semibold leading-[0.99] tracking-[-0.075em] text-white">
-              The game is
-              <br />
-              yours to{" "}
-              <span className="relative inline-block text-[#b7f56a]">
-                control.
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 250 14"
-                  fill="none"
-                  className="absolute -bottom-2 left-0 w-full"
+            <div className="mx-auto flex max-w-[1320px] flex-col gap-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-xl px-3.5 py-3 text-sm text-[#C2C8D2] transition-colors hover:bg-white/[0.04] hover:text-white"
                 >
-                  <path
-                    d="M3 9C65 2 166 2 247 7"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                  />
-                </svg>
+                  {item.label}
+                </Link>
+              ))}
+
+              <div className="mt-3 grid grid-cols-2 gap-3 border-t border-white/[0.07] pt-4">
+                <Link
+                  href="/login"
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-xl border border-white/10 px-4 py-3 text-center text-sm font-semibold transition-colors hover:bg-white/[0.04]"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/signup"
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-xl bg-[#B7F56A] px-4 py-3 text-center text-sm font-bold text-[#08090D] transition-colors hover:bg-[#CAFF8D]"
+                >
+                  Get started
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* HERO */}
+      <section className="relative isolate overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute left-1/2 top-[-260px] h-[540px] w-[780px] -translate-x-1/2 rounded-full bg-[#B7F56A]/[0.075] blur-[135px]" />
+          <div className="absolute right-[-180px] top-[250px] h-[340px] w-[340px] rounded-full bg-[#4B73B8]/[0.055] blur-[110px]" />
+          <div
+            className="absolute inset-0 opacity-[0.15]"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px)",
+              backgroundSize: "64px 64px",
+              maskImage: "linear-gradient(to bottom, black 0%, transparent 85%)",
+            }}
+          />
+        </div>
+
+        <div className="mx-auto grid max-w-[1320px] items-center gap-16 px-5 pb-20 pt-16 sm:px-8 sm:pb-24 sm:pt-20 lg:grid-cols-[0.92fr_1.08fr] lg:gap-12 lg:px-12 lg:pb-28 lg:pt-24">
+          <motion.div
+            initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: motionDuration, ease: "easeOut" }}
+            className="relative z-10 mx-auto w-full max-w-[600px] lg:mx-0"
+          >
+            <SectionLabel>Football competition platform</SectionLabel>
+
+            <h1 className="max-w-[700px] text-[clamp(2.8rem,6vw,5.35rem)] font-semibold leading-[1.015] tracking-[-0.075em] text-white">
+              Simulate the game.
+              <span className="mt-1 block text-[#B7F56A]">
+                Own the competition.
               </span>
             </h1>
 
-            <p className="mt-7 max-w-lg text-sm leading-7 text-[#a0abba] sm:text-base sm:leading-8">
-              Create competitions, simulate matches, manage fixtures, and follow
-              every result. Build your football universe with one powerful
-              simulation experience.
+            <p className="mt-7 max-w-[500px] text-[14px] leading-7 text-[#9AA3B1] sm:text-[15px] sm:leading-8">
+              Build tournaments, generate fixtures, simulate matchdays, and
+              follow every point on the road to the trophy. Your football
+              competition, managed in one place.
             </p>
 
-            <div className="mt-9 flex flex-col gap-3 min-[420px]:flex-row">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link
                 href="/signup"
-                className="group inline-flex min-h-12 items-center justify-center gap-2.5 rounded-xl bg-[#b7f56a] px-6 text-sm font-bold text-[#10150a] shadow-[0_0_35px_rgba(183,245,106,0.1)] transition hover:-translate-y-0.5 hover:bg-[#c9ff87]"
+                className="group inline-flex min-h-[51px] items-center justify-center gap-2 rounded-xl bg-[#B7F56A] px-6 text-[12px] font-bold text-[#08090D] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#CAFF8D] hover:shadow-[0_10px_35px_rgba(183,245,106,0.13)]"
               >
-                Start building
+                Create your competition
                 <ArrowRight
                   size={16}
                   className="transition-transform group-hover:translate-x-1"
@@ -645,301 +516,366 @@ export default function Home() {
               </Link>
 
               <Link
-                href="#how-it-works"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/[0.12] bg-white/[0.025] px-6 text-sm font-semibold text-[#d0d7e0] transition hover:border-white/25 hover:bg-white/[0.06]"
+                href="#platform"
+                className="inline-flex min-h-[51px] items-center justify-center gap-2 rounded-xl border border-white/[0.12] bg-white/[0.025] px-5 text-[12px] font-semibold text-[#D9DDE5] transition-colors hover:border-white/20 hover:bg-white/[0.055]"
               >
-                <Play size={14} className="fill-current" />
+                <CirclePlay size={17} className="text-[#B7F56A]" />
                 Explore the platform
               </Link>
             </div>
 
-            <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-white/[0.08] pt-6">
-              <div className="flex items-center gap-2">
-                <ShieldCheck size={15} className="text-[#b7f56a]" />
-                <span className="text-[11px] text-[#9ba6b5]">
-                  Built for football fans
+            <div className="mt-9 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-white/[0.08] pt-6">
+              {[
+                "Competition management",
+                "Match simulation",
+                "Standings",
+              ].map((item) => (
+                <span
+                  key={item}
+                  className="inline-flex items-center gap-2 text-[10px] font-medium text-[#A3ABB8] sm:text-[11px]"
+                >
+                  <Check size={13} className="shrink-0 text-[#B7F56A]" />
+                  {item}
                 </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Zap size={15} className="text-[#b7f56a]" />
-                <span className="text-[11px] text-[#9ba6b5]">
-                  Fast match simulation
-                </span>
-              </div>
+              ))}
             </div>
+
+            <Link
+              href="#features"
+              className="mt-9 hidden w-fit items-center gap-2 text-[10px] font-semibold uppercase tracking-[1.6px] text-[#737D8A] transition-colors hover:text-[#B7F56A] sm:inline-flex"
+            >
+              Discover what you can do
+              <ArrowDownRight size={14} />
+            </Link>
           </motion.div>
 
           <motion.div
-            initial={
-              shouldReduceMotion ? false : { opacity: 0, scale: 0.97, y: 18 }
-            }
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.75, delay: 0.12, ease: "easeOut" }}
-            className="relative"
+            initial={{
+              opacity: 0,
+              y: shouldReduceMotion ? 0 : 24,
+              scale: shouldReduceMotion ? 1 : 0.985,
+            }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{
+              duration: shouldReduceMotion ? 0 : 0.8,
+              delay: shouldReduceMotion ? 0 : 0.1,
+              ease: "easeOut",
+            }}
+            className="relative mx-auto w-full max-w-[650px]"
+            id="platform"
           >
             <DashboardPreview />
           </motion.div>
         </div>
 
-        <div className="mx-auto mt-20 flex max-w-7xl flex-col items-center justify-between gap-5 border-t border-white/[0.07] pt-7 sm:flex-row">
-          <p className="text-center text-[10px] font-medium uppercase tracking-[0.19em] text-[#687586] sm:text-left">
-            One platform. Every possibility.
-          </p>
-          <Link
-            href="#features"
-            className="inline-flex items-center gap-2 text-[11px] font-medium text-[#9ba6b5] transition hover:text-[#b7f56a]"
-          >
-            Discover what you can do
-            <ArrowDownRight size={14} />
-          </Link>
-        </div>
-      </section>
-
-      <section
-        id="features"
-        className="relative z-10 scroll-mt-24 border-t border-white/[0.07] px-5 py-20 sm:px-8 sm:py-24 lg:px-10 lg:py-28"
-      >
-        <div className="mx-auto max-w-7xl">
-          <motion.div {...reveal} className="max-w-2xl">
-            <SectionLabel icon={Zap}>MADE FOR THE GAME</SectionLabel>
-            <h2 className="text-3xl font-semibold leading-tight tracking-[-0.06em] text-white sm:text-4xl lg:text-5xl">
-              Everything you need.
-              <br />
-              <span className="text-[#7f8b9b]">Nothing in your way.</span>
-            </h2>
-            <p className="mt-5 max-w-xl text-sm leading-7 text-[#98a4b3] sm:text-base sm:leading-8">
-              From your first competition to the final result, FootballSim
-              brings the essential tools together in one focused workspace.
+        <div className="mx-auto max-w-[1320px] px-5 sm:px-8 lg:px-12">
+          <div className="flex flex-col gap-4 border-t border-white/[0.07] py-6 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[9px] font-semibold uppercase tracking-[1.8px] text-[#737C8A] sm:text-[10px]">
+              One platform. Every stage of the game.
             </p>
-          </motion.div>
-
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:mt-16 lg:grid-cols-3">
-            {features.map((feature, index) => (
-              <motion.article
-                key={feature.number}
-                initial={shouldReduceMotion ? false : { opacity: 0, y: 18 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.15 }}
-                transition={{
-                  duration: 0.45,
-                  delay: shouldReduceMotion ? 0 : (index % 3) * 0.08,
-                }}
-                className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0b1016]/80 p-6 transition duration-300 hover:-translate-y-1 hover:border-[#b7f56a]/25 hover:bg-[#0e141b] sm:p-7"
-              >
-                <div className="absolute right-0 top-0 h-28 w-28 rounded-full bg-[#b7f56a]/[0.025] blur-2xl transition group-hover:bg-[#b7f56a]/[0.07]" />
-
-                <div className="relative flex items-start justify-between">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#b7f56a]/15 bg-[#b7f56a]/[0.07] text-[#b7f56a] transition group-hover:bg-[#b7f56a]/[0.13]">
-                    <feature.icon size={20} strokeWidth={1.7} />
-                  </span>
-                  <span className="font-mono text-xs text-[#586474]">
-                    {feature.number}
-                  </span>
-                </div>
-
-                <p className="relative mt-7 text-[9px] font-semibold tracking-[0.17em] text-[#82906f]">
-                  {feature.tag}
-                </p>
-                <h3 className="relative mt-2 text-lg font-semibold tracking-[-0.035em] text-white">
-                  {feature.title}
-                </h3>
-                <p className="relative mt-3 text-sm leading-7 text-[#909cac]">
-                  {feature.description}
-                </p>
-
-                <div className="relative mt-6 flex items-center gap-2 text-xs font-semibold text-[#b7f56a] opacity-0 transition duration-300 group-hover:opacity-100">
-                  Explore feature
-                  <ArrowRight size={13} />
-                </div>
-              </motion.article>
-            ))}
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3 text-[10px] text-[#8E97A5] sm:text-[11px]">
+              <span className="inline-flex items-center gap-2">
+                <ShieldCheck size={14} className="text-[#B7F56A]" />
+                Competition control
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <Activity size={14} className="text-[#B7F56A]" />
+                Matchday tracking
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <Clock3 size={14} className="text-[#B7F56A]" />
+                Round-by-round progress
+              </span>
+            </div>
           </div>
         </div>
       </section>
 
+      {/* FEATURES */}
+      <section
+        id="features"
+        className="relative border-t border-white/[0.06] bg-[#0B0D12] py-24 sm:py-28 lg:py-32"
+      >
+        <div className="mx-auto max-w-[1320px] px-5 sm:px-8 lg:px-12">
+          <motion.div
+            initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: motionDuration, ease: "easeOut" }}
+            className="mx-auto max-w-[740px] text-center"
+          >
+            <SectionLabel>Built around the competition</SectionLabel>
+
+            <h2 className="text-3xl font-semibold leading-[1.12] tracking-[-0.06em] text-white sm:text-4xl lg:text-5xl">
+              Everything you need.
+              <span className="mt-1 block text-[#858E9D]">
+                One serious football workspace.
+              </span>
+            </h2>
+
+            <p className="mx-auto mt-5 max-w-[560px] text-sm leading-7 text-[#929BA9] sm:text-[15px]">
+              Spend less time managing the process and more time following the
+              competition. Keep the essential tools together from setup to
+              final standings.
+            </p>
+          </motion.div>
+
+          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:mt-16 lg:grid-cols-4">
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
+
+              return (
+                <motion.article
+                  key={feature.number}
+                  initial={{
+                    opacity: 0,
+                    y: shouldReduceMotion ? 0 : 18,
+                  }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.15 }}
+                  transition={{
+                    duration: shouldReduceMotion ? 0 : 0.5,
+                    delay: shouldReduceMotion ? 0 : index * 0.07,
+                    ease: "easeOut",
+                  }}
+                  whileHover={
+                    shouldReduceMotion ? undefined : { y: -5 }
+                  }
+                  className="group relative flex min-h-[280px] flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-[#11141B] p-6 transition-colors duration-300 hover:border-[#B7F56A]/25 hover:bg-[#141821] sm:p-7"
+                >
+                  <span className="absolute right-5 top-5 text-[10px] font-semibold tracking-[1px] text-[#4D5664]">
+                    {feature.number}
+                  </span>
+
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#B7F56A]/15 bg-[#B7F56A]/[0.07] text-[#B7F56A] transition-colors group-hover:bg-[#B7F56A]/[0.13]">
+                    <Icon size={21} strokeWidth={1.7} />
+                  </div>
+
+                  <p className="mt-7 text-[9px] font-semibold tracking-[1.7px] text-[#89929F]">
+                    {feature.tag}
+                  </p>
+
+                  <h3 className="mt-2 text-[17px] font-semibold tracking-[-0.5px] text-white">
+                    {feature.title}
+                  </h3>
+
+                  <p className="mt-3 text-[12px] leading-6 text-[#929BA8] sm:text-[13px]">
+                    {feature.description}
+                  </p>
+
+                  <div className="mt-auto flex justify-end pt-5">
+                    <ArrowUpRight
+                      size={17}
+                      className="text-[#687281] transition-colors group-hover:text-[#B7F56A]"
+                    />
+                  </div>
+                </motion.article>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
       <section
         id="how-it-works"
-        className="relative z-10 scroll-mt-24 border-t border-white/[0.07] bg-[#0a0e13] px-5 py-20 sm:px-8 sm:py-24 lg:px-10 lg:py-28"
+        className="relative overflow-hidden py-24 sm:py-28 lg:py-32"
       >
-        <div className="mx-auto grid max-w-7xl gap-14 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
-          <motion.div {...reveal}>
-            <SectionLabel icon={MousePointer2}>SIMPLE BY DESIGN</SectionLabel>
-            <h2 className="text-3xl font-semibold leading-tight tracking-[-0.06em] text-white sm:text-4xl lg:text-5xl">
-              From setup
-              <br />
-              to kick-off.
-              <br />
-              <span className="text-[#7f8b9b]">Three simple steps.</span>
-            </h2>
-            <p className="mt-5 max-w-md text-sm leading-7 text-[#98a4b3] sm:text-base sm:leading-8">
-              Spend less time organizing your competition and more time
-              following the football.
-            </p>
+        <div className="pointer-events-none absolute -left-48 top-1/3 h-[400px] w-[400px] rounded-full bg-[#B7F56A]/[0.035] blur-[110px]" />
+
+        <div className="relative mx-auto max-w-[1320px] px-5 sm:px-8 lg:px-12">
+          <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+            <motion.div
+              initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: motionDuration, ease: "easeOut" }}
+              className="lg:sticky lg:top-32 lg:h-fit"
+            >
+              <SectionLabel>From setup to champion</SectionLabel>
+
+              <h2 className="max-w-[500px] text-3xl font-semibold leading-[1.13] tracking-[-0.06em] text-white sm:text-4xl lg:text-5xl">
+                Four steps.
+                <span className="mt-1 block text-[#B7F56A]">
+                  One competition.
+                </span>
+              </h2>
+
+              <p className="mt-6 max-w-[430px] text-sm leading-7 text-[#929BA9] sm:text-[15px]">
+                FootballSim gives your competition a clear path from the first
+                setup to the final table. Organize your teams, run the
+                matchdays, and keep track of how the story unfolds.
+              </p>
+
+              <Link
+                href="/signup"
+                className="group mt-8 inline-flex items-center gap-2 text-[12px] font-semibold text-[#B7F56A] transition-colors hover:text-[#D1FFA0]"
+              >
+                Start your competition
+                <ArrowRight
+                  size={16}
+                  className="transition-transform group-hover:translate-x-1"
+                />
+              </Link>
+            </motion.div>
+
+            <div className="relative">
+              <div className="absolute bottom-10 left-[23px] top-10 w-px bg-gradient-to-b from-[#B7F56A]/50 via-white/10 to-transparent sm:left-[27px]" />
+
+              <div className="space-y-4">
+                {steps.map((step, index) => {
+                  const Icon = step.icon;
+
+                  return (
+                    <motion.div
+                      key={step.number}
+                      initial={{
+                        opacity: 0,
+                        x: shouldReduceMotion ? 0 : 18,
+                      }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true, amount: 0.2 }}
+                      transition={{
+                        duration: shouldReduceMotion ? 0 : 0.5,
+                        delay: shouldReduceMotion ? 0 : index * 0.07,
+                        ease: "easeOut",
+                      }}
+                      className="group relative flex gap-4 rounded-2xl border border-white/[0.07] bg-[#0D1016] p-5 transition-colors hover:border-white/[0.13] sm:gap-6 sm:p-7"
+                    >
+                      <div className="relative z-10 flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl border border-[#B7F56A]/20 bg-[#11180E] text-[#B7F56A] sm:h-[54px] sm:w-[54px]">
+                        <Icon size={20} strokeWidth={1.7} />
+                      </div>
+
+                      <div className="min-w-0 flex-1 py-0.5">
+                        <div className="mb-2 text-[9px] font-bold uppercase tracking-[1.6px] text-[#737D8B]">
+                          STEP {step.number}
+                        </div>
+                        <h3 className="text-base font-semibold tracking-[-0.3px] text-white sm:text-lg">
+                          {step.title}
+                        </h3>
+                        <p className="mt-2 max-w-[430px] text-[12px] leading-6 text-[#929BA9] sm:text-[13px]">
+                          {step.description}
+                        </p>
+                      </div>
+
+                      <ChevronRight
+                        size={18}
+                        className="mt-1 shrink-0 text-[#525C69] transition-all group-hover:translate-x-1 group-hover:text-[#B7F56A]"
+                      />
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FINAL CTA */}
+      <section className="px-5 pb-20 sm:px-8 sm:pb-24 lg:px-12 lg:pb-28">
+        <div className="relative mx-auto max-w-[1320px] overflow-hidden rounded-3xl border border-[#B7F56A]/15 bg-[#11170E] px-6 py-14 sm:px-12 sm:py-16 lg:px-16 lg:py-20">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute -right-16 -top-40 h-[370px] w-[370px] rounded-full bg-[#B7F56A]/[0.09] blur-[90px]" />
+            <div
+              className="absolute inset-0 opacity-[0.12]"
+              style={{
+                backgroundImage:
+                  "linear-gradient(rgba(183,245,106,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(183,245,106,0.16) 1px, transparent 1px)",
+                backgroundSize: "48px 48px",
+                maskImage:
+                  "linear-gradient(110deg, transparent 10%, black 100%)",
+              }}
+            />
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.25 }}
+            transition={{ duration: motionDuration, ease: "easeOut" }}
+            className="relative flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-end"
+          >
+            <div className="max-w-[650px]">
+              <div className="mb-5 inline-flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[2px] text-[#B7F56A] sm:text-[10px]">
+                <Sparkles size={14} />
+                Your next competition starts here
+              </div>
+
+              <h2 className="text-3xl font-semibold leading-[1.12] tracking-[-0.06em] text-white sm:text-4xl lg:text-5xl">
+                Ready to take control
+                <span className="mt-1 block text-[#B7F56A]">
+                  of the beautiful game?
+                </span>
+              </h2>
+
+              <p className="mt-5 max-w-[500px] text-sm leading-7 text-[#A2AB9A] sm:text-[15px]">
+                Bring your teams together, build your tournament, and discover
+                where every match takes you.
+              </p>
+            </div>
 
             <Link
               href="/signup"
-              className="group mt-8 inline-flex items-center gap-2 text-sm font-semibold text-[#b7f56a] transition hover:text-[#d2ff9e]"
+              className="group inline-flex min-h-[52px] shrink-0 items-center justify-center gap-2 rounded-xl bg-[#B7F56A] px-6 text-[12px] font-bold text-[#08090D] transition-all hover:-translate-y-0.5 hover:bg-[#CAFF8D]"
             >
-              Get started today
+              Get started with FootballSim
               <ArrowRight
-                size={16}
+                size={17}
                 className="transition-transform group-hover:translate-x-1"
               />
             </Link>
           </motion.div>
-
-          <div className="relative">
-            <div className="absolute bottom-10 left-[21px] top-10 hidden w-px bg-gradient-to-b from-[#b7f56a]/35 via-white/10 to-transparent sm:block" />
-
-            <div className="space-y-4">
-              {steps.map((step, index) => (
-                <motion.div
-                  key={step.number}
-                  initial={shouldReduceMotion ? false : { opacity: 0, x: 15 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, amount: 0.2 }}
-                  transition={{
-                    duration: 0.5,
-                    delay: shouldReduceMotion ? 0 : index * 0.1,
-                  }}
-                  className="group relative flex gap-5 rounded-2xl border border-white/[0.07] bg-[#0d1218] p-5 transition hover:border-white/[0.13] sm:gap-6 sm:p-7"
-                >
-                  <div className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#b7f56a]/20 bg-[#b7f56a]/[0.08] font-mono text-xs font-semibold text-[#b7f56a]">
-                    {step.number}
-                  </div>
-
-                  <div className="min-w-0 flex-1 pt-0.5">
-                    <h3 className="text-base font-semibold tracking-[-0.025em] text-white sm:text-lg">
-                      {step.title}
-                    </h3>
-                    <p className="mt-2 text-sm leading-7 text-[#909cac]">
-                      {step.description}
-                    </p>
-                  </div>
-
-                  <ArrowUpRight
-                    size={17}
-                    className="mt-1 shrink-0 text-[#667384] transition group-hover:text-[#b7f56a]"
-                  />
-                </motion.div>
-              ))}
-            </div>
-          </div>
         </div>
       </section>
 
-      <section
-        id="about"
-        className="relative z-10 scroll-mt-24 px-5 py-20 sm:px-8 sm:py-24 lg:px-10 lg:py-28"
-      >
-        <motion.div
-          {...reveal}
-          className="relative mx-auto max-w-7xl overflow-hidden rounded-[26px] border border-white/[0.1] bg-[#0d1319] px-6 py-12 sm:px-10 sm:py-16 lg:px-16 lg:py-20"
-        >
-          <div className="pointer-events-none absolute -right-20 -top-28 h-80 w-80 rounded-full bg-[#b7f56a]/[0.08] blur-[90px]" />
-          <div className="pointer-events-none absolute -bottom-40 left-1/3 h-72 w-72 rounded-full bg-[#b7f56a]/[0.035] blur-[90px]" />
-
-          <div className="relative grid items-center gap-10 lg:grid-cols-[1fr_auto] lg:gap-16">
-            <div className="max-w-2xl">
-              <SectionLabel icon={CircleHelp}>WHY FOOTBALLSIM</SectionLabel>
-              <h2 className="text-3xl font-semibold leading-tight tracking-[-0.06em] text-white sm:text-4xl lg:text-5xl">
-                Your football ideas
-                <br />
-                deserve a <span className="text-[#b7f56a]">proper pitch.</span>
-              </h2>
-              <p className="mt-5 max-w-xl text-sm leading-7 text-[#98a4b3] sm:text-base sm:leading-8">
-                FootballSim is built around one idea: give football fans a
-                clear, practical way to create competitions and explore match
-                outcomes. Whether you are organizing a tournament or
-                experimenting with a league format, the experience stays focused
-                on the game.
+      {/* FOOTER */}
+      <footer className="border-t border-white/[0.07] bg-[#08090D]">
+        <div className="mx-auto max-w-[1320px] px-5 sm:px-8 lg:px-12">
+          <div className="flex flex-col gap-8 py-10 sm:flex-row sm:items-center sm:justify-between">
+            <div className="max-w-[350px]">
+              <Brand />
+              <p className="mt-4 text-[11px] leading-6 text-[#858E9D]">
+                A focused workspace for organizing football competitions,
+                simulating fixtures, and following the road to the trophy.
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-3 lg:max-w-[220px] lg:flex-col">
-              {[
-                { icon: Trophy, label: "Competition focused" },
-                { icon: BarChart3, label: "Results and standings" },
-                { icon: Gamepad2, label: "Made for football fans" },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="inline-flex items-center gap-2.5 rounded-xl border border-white/[0.09] bg-white/[0.025] px-3.5 py-3 lg:w-full"
-                >
-                  <item.icon size={16} className="shrink-0 text-[#b7f56a]" />
-                  <span className="text-xs font-medium text-[#c0c9d4]">
-                    {item.label}
-                  </span>
-                </div>
-              ))}
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+              <Link
+                href="#features"
+                className="text-[11px] text-[#929BA8] transition-colors hover:text-white"
+              >
+                Features
+              </Link>
+              <Link
+                href="#how-it-works"
+                className="text-[11px] text-[#929BA8] transition-colors hover:text-white"
+              >
+                How it works
+              </Link>
+              <Link
+                href="/login"
+                className="text-[11px] text-[#929BA8] transition-colors hover:text-white"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/signup"
+                className="text-[11px] text-[#929BA8] transition-colors hover:text-white"
+              >
+                Create account
+              </Link>
             </div>
           </div>
-        </motion.div>
-      </section>
 
-      <section className="relative z-10 px-5 pb-20 sm:px-8 sm:pb-24 lg:px-10 lg:pb-28">
-        <motion.div
-          {...reveal}
-          className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 rounded-2xl border border-[#b7f56a]/20 bg-[#b7f56a]/[0.055] p-6 sm:p-9 md:flex-row md:items-center lg:p-12"
-        >
-          <div className="max-w-2xl">
-            <div className="mb-4 inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#b7f56a]">
-              <Sparkles size={13} />
-              YOUR NEXT SEASON STARTS HERE
-            </div>
-            <h2 className="text-3xl font-semibold leading-tight tracking-[-0.06em] text-white sm:text-4xl lg:text-[44px]">
-              Ready to take control
-              <br className="hidden sm:block" /> of your football world?
-            </h2>
-            <p className="mt-4 max-w-xl text-sm leading-7 text-[#9ba7b6]">
-              Create your competition, set up your teams, and see where the
-              season takes you.
-            </p>
-          </div>
-
-          <Link
-            href="/signup"
-            className="group inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-2.5 rounded-xl bg-[#b7f56a] px-6 text-sm font-bold text-[#10150a] transition hover:-translate-y-0.5 hover:bg-[#c9ff87] sm:w-auto"
-          >
-            Create your account
-            <ArrowRight
-              size={16}
-              className="transition-transform group-hover:translate-x-1"
-            />
-          </Link>
-        </motion.div>
-      </section>
-
-      <footer className="relative z-10 border-t border-white/[0.07] px-5 sm:px-8 lg:px-10">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6 py-8 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
-            <Brand compact />
-            <span className="hidden h-4 w-px bg-white/10 sm:block" />
+          <div className="flex flex-col gap-3 border-t border-white/[0.07] py-5 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[10px] text-[#697382]">
-              © {year ?? 2026} FootballSim. Built for the love of the game.
+              © {new Date().getFullYear()} FootballSim. Built for the love of
+              the game.
             </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-            <Link
-              href="/login"
-              className="text-[11px] text-[#8b97a6] transition hover:text-white"
-            >
-              Log in
-            </Link>
-            <Link
-              href="/signup"
-              className="text-[11px] text-[#8b97a6] transition hover:text-white"
-            >
-              Create account
-            </Link>
-            <Link
-              href="#features"
-              className="inline-flex items-center gap-1.5 text-[11px] text-[#8b97a6] transition hover:text-white"
-            >
-              Back to top
-              <ChevronDown size={12} className="rotate-180" />
-            </Link>
+            <p className="text-[10px] text-[#697382]">
+              Independent football simulation platform.
+            </p>
           </div>
         </div>
       </footer>
