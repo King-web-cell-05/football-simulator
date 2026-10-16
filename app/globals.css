@@ -42,3 +42,12 @@ body[data-page="signup"] {
   height: 100dvh;
   overflow: hidden;
 }
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

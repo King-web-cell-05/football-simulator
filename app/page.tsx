@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  useMotionValueEvent,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+} from "framer-motion";
 import {
   ArrowDownRight,
   ArrowRight,
@@ -13,7 +20,6 @@ import {
   Check,
   ChevronDown,
   CircleHelp,
-  Clock3,
   Crown,
   Gamepad2,
   Goal,
@@ -112,6 +118,12 @@ const steps = [
     description:
       "Generate fixtures, simulate matches, and follow the standings as your season develops.",
   },
+];
+
+const navLinks = [
+  { label: "Features", href: "#features", id: "features" },
+  { label: "How it works", href: "#how-it-works", id: "how-it-works" },
+  { label: "About", href: "#about", id: "about" },
 ];
 
 function Brand({ compact = false }: { compact?: boolean }) {
@@ -320,8 +332,242 @@ function DashboardPreview() {
   );
 }
 
-export default function Home() {
+function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [active, setActive] = useState("");
+  const shouldReduceMotion = useReducedMotion();
+
+  const { scrollY, scrollYProgress } = useScroll();
+  const progress = useSpring(scrollYProgress, {
+    stiffness: 140,
+    damping: 30,
+    mass: 0.2,
+  });
+
+  useMotionValueEvent(scrollY, "change", (y) => {
+    setScrolled(y > 16);
+    if (y < 120) setActive("");
+  });
+
+  // Highlight the section currently in view
+  useEffect(() => {
+    const sections = navLinks
+      .map((l) => document.getElementById(l.id))
+      .filter(Boolean) as HTMLElement[];
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setActive(entry.target.id);
+        });
+      },
+      { rootMargin: "-40% 0px -55% 0px" },
+    );
+
+    sections.forEach((s) => observer.observe(s));
+    return () => observer.disconnect();
+  }, []);
+
+  // Escape to close + close when resizing to desktop
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
+    const onResize = () => window.innerWidth >= 768 && setMenuOpen(false);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+
+  // Lock body scroll while the mobile menu is open
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [menuOpen]);
+
+  const closeMenu = () => setMenuOpen(false);
+
+  return (
+    <>
+      <motion.header
+        initial={shouldReduceMotion ? false : { y: -90, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        className="fixed inset-x-0 top-0 z-50"
+      >
+        {/* Background layer (kept separate so backdrop-blur doesn't trap children) */}
+        <div
+          className={`pointer-events-none absolute inset-0 border-b transition-all duration-500 ${
+            scrolled || menuOpen
+              ? "border-white/[0.09] bg-[#070a0e]/80 shadow-[0_10px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl"
+              : "border-transparent bg-transparent backdrop-blur-0"
+          }`}
+        />
+
+        <motion.div
+          animate={{ height: scrolled ? 64 : 76 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="relative mx-auto flex max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10"
+        >
+          <Brand />
+
+          {/* Desktop nav */}
+          <nav className="relative hidden items-center gap-1 md:flex">
+            {navLinks.map((link) => {
+              const isActive = active === link.id;
+              return (
+                <Link
+                  key={link.id}
+                  href={link.href}
+                  className={`relative rounded-full px-4 py-2 text-xs font-medium transition-colors duration-300 ${
+                    isActive ? "text-white" : "text-[#9ca7b6] hover:text-white"
+                  }`}
+                >
+                  {isActive && (
+                    <motion.span
+                      layoutId="nav-active-pill"
+                      className="absolute inset-0 rounded-full border border-white/[0.09] bg-white/[0.06]"
+                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                    />
+                  )}
+                  <span className="relative">{link.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="hidden items-center gap-5 md:flex">
+            <Link
+              href="/login"
+              className="text-xs font-semibold text-[#c4ccd6] transition hover:text-white"
+            >
+              Log in
+            </Link>
+            <Link
+              href="/signup"
+              className="group inline-flex h-10 items-center gap-2 rounded-lg bg-[#b7f56a] px-4 text-xs font-bold text-[#10150a] shadow-[0_0_25px_rgba(183,245,106,0.12)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#c9ff87]"
+            >
+              Get started
+              <ArrowUpRight
+                size={14}
+                className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+              />
+            </Link>
+          </div>
+
+          {/* Mobile toggle */}
+          <button
+            type="button"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((v) => !v)}
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-white md:hidden"
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={menuOpen ? "close" : "open"}
+                initial={{ rotate: -90, opacity: 0, scale: 0.7 }}
+                animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                exit={{ rotate: 90, opacity: 0, scale: 0.7 }}
+                transition={{ duration: 0.18 }}
+                className="flex"
+              >
+                {menuOpen ? <X size={19} /> : <Menu size={19} />}
+              </motion.span>
+            </AnimatePresence>
+          </button>
+        </motion.div>
+
+        {/* Scroll progress bar */}
+        <motion.div
+          style={{ scaleX: progress }}
+          className="absolute bottom-0 left-0 h-px w-full origin-left bg-gradient-to-r from-[#b7f56a]/0 via-[#b7f56a] to-[#c9ff87]"
+        />
+
+        {/* Mobile menu */}
+        <AnimatePresence>
+          {menuOpen && (
+            <motion.div
+              key="mobile-menu"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="relative overflow-hidden border-t border-white/[0.07] md:hidden"
+            >
+              <nav className="mx-auto flex max-w-7xl flex-col gap-1 px-5 py-5">
+                {navLinks.map((item, i) => (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, x: -14 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.08 + i * 0.06, duration: 0.3 }}
+                  >
+                    <Link
+                      href={item.href}
+                      onClick={closeMenu}
+                      className={`flex items-center justify-between rounded-lg px-3 py-3 text-sm transition ${
+                        active === item.id
+                          ? "bg-white/[0.05] text-white"
+                          : "text-[#b6c0ce] hover:bg-white/[0.04] hover:text-white"
+                      }`}
+                    >
+                      {item.label}
+                      <ArrowUpRight size={15} className="text-[#667384]" />
+                    </Link>
+                  </motion.div>
+                ))}
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.3 }}
+                  className="mt-3 grid grid-cols-2 gap-3 border-t border-white/[0.07] pt-4"
+                >
+                  <Link
+                    href="/login"
+                    onClick={closeMenu}
+                    className="flex h-11 items-center justify-center rounded-lg border border-white/10 text-sm font-semibold text-white"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    href="/signup"
+                    onClick={closeMenu}
+                    className="flex h-11 items-center justify-center gap-2 rounded-lg bg-[#b7f56a] text-sm font-bold text-[#10150a]"
+                  >
+                    Get started
+                    <ArrowRight size={15} />
+                  </Link>
+                </motion.div>
+              </nav>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.header>
+
+      {/* Tap-outside backdrop for mobile menu */}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={closeMenu}
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+          />
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+export default function Home() {
   const [year, setYear] = useState<number | null>(null);
   const shouldReduceMotion = useReducedMotion();
 
@@ -338,109 +584,15 @@ export default function Home() {
         transition: { duration: 0.55, ease: "easeOut" as const },
       };
 
-  const closeMenu = () => setMenuOpen(false);
-
   return (
-    <main className="min-h-screen overflow-hidden bg-[#070a0e] text-white selection:bg-[#b7f56a] selection:text-[#070a0e]">
+    <main className="min-h-screen overflow-x-clip bg-[#070a0e] text-white selection:bg-[#b7f56a] selection:text-[#070a0e]">
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(183,245,106,0.075),transparent_45%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:linear-gradient(to_bottom,black,transparent_75%)]" />
       </div>
 
-      <header className="sticky top-0 z-50 border-b border-white/[0.07] bg-[#070a0e]/85 backdrop-blur-2xl">
-        <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10">
-          <Brand />
-
-          <nav className="hidden items-center gap-8 md:flex">
-            <Link
-              href="#features"
-              className="text-xs font-medium text-[#9ca7b6] transition hover:text-white"
-            >
-              Features
-            </Link>
-            <Link
-              href="#how-it-works"
-              className="text-xs font-medium text-[#9ca7b6] transition hover:text-white"
-            >
-              How it works
-            </Link>
-            <Link
-              href="#about"
-              className="text-xs font-medium text-[#9ca7b6] transition hover:text-white"
-            >
-              About
-            </Link>
-          </nav>
-
-          <div className="hidden items-center gap-5 md:flex">
-            <Link
-              href="/login"
-              className="text-xs font-semibold text-[#c4ccd6] transition hover:text-white"
-            >
-              Log in
-            </Link>
-            <Link
-              href="/signup"
-              className="group inline-flex h-10 items-center gap-2 rounded-lg bg-[#b7f56a] px-4 text-xs font-bold text-[#10150a] transition hover:bg-[#c9ff87]"
-            >
-              Get started
-              <ArrowUpRight
-                size={14}
-                className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-              />
-            </Link>
-          </div>
-
-          <button
-            type="button"
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-white md:hidden"
-          >
-            {menuOpen ? <X size={19} /> : <Menu size={19} />}
-          </button>
-        </div>
-
-        {menuOpen && (
-          <div className="border-t border-white/[0.07] bg-[#0a0e13] px-5 py-5 md:hidden">
-            <nav className="mx-auto flex max-w-7xl flex-col gap-1">
-              {[
-                { label: "Features", href: "#features" },
-                { label: "How it works", href: "#how-it-works" },
-                { label: "About", href: "#about" },
-              ].map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={closeMenu}
-                  className="rounded-lg px-3 py-3 text-sm text-[#b6c0ce] transition hover:bg-white/[0.04] hover:text-white"
-                >
-                  {item.label}
-                </Link>
-              ))}
-
-              <div className="mt-3 grid grid-cols-2 gap-3 border-t border-white/[0.07] pt-4">
-                <Link
-                  href="/login"
-                  onClick={closeMenu}
-                  className="flex h-11 items-center justify-center rounded-lg border border-white/10 text-sm font-semibold text-white"
-                >
-                  Log in
-                </Link>
-                <Link
-                  href="/signup"
-                  onClick={closeMenu}
-                  className="flex h-11 items-center justify-center gap-2 rounded-lg bg-[#b7f56a] text-sm font-bold text-[#10150a]"
-                >
-                  Get started
-                  <ArrowRight size={15} />
-                </Link>
-              </div>
-            </nav>
-          </div>
-        )}
-      </header>
+      <Navbar />
+      <div className="h-[76px]" aria-hidden="true" />
 
       <section className="relative z-10 px-5 pb-20 pt-16 sm:px-8 sm:pb-28 sm:pt-24 lg:px-10 lg:pb-32 lg:pt-28">
         <div className="mx-auto grid max-w-7xl items-center gap-16 lg:grid-cols-[0.92fr_1.08fr] lg:gap-12">
