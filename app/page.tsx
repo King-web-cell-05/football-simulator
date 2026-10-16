@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { Suspense, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   Activity,
@@ -158,6 +158,10 @@ function Brand({ compact = false }: { compact?: boolean }) {
       </span>
     </Link>
   );
+}
+
+function CurrentYear() {
+  return <>{new Date().getFullYear()}</>;
 }
 
 function SectionLabel({ children }: { children: ReactNode }) {
@@ -870,8 +874,8 @@ export default function Home() {
 
           <div className="flex flex-col gap-3 border-t border-white/[0.07] py-5 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[10px] text-[#697382]">
-              © {new Date().getFullYear()} FootballSim. Built for the love of
-              the game.
+              © <Suspense fallback="—"><CurrentYear /></Suspense> FootballSim.
+              Built for the love of the game.
             </p>
             <p className="text-[10px] text-[#697382]">
               Independent football simulation platform.
