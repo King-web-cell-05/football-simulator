@@ -17,6 +17,13 @@ import {
   UserRound,
 } from "lucide-react";
 
+const inputClass =
+  "h-[clamp(2.5rem,5.6dvh,3rem)] w-full rounded-xl border border-white/[0.1] bg-[#080c11] pl-11 text-sm text-white outline-none transition placeholder:text-[#586474] focus:border-[#b7f56a]/60 focus:ring-2 focus:ring-[#b7f56a]/10";
+
+const labelClass = "mb-1.5 block text-xs font-semibold text-[#d4dbe4]";
+
+const buttonHeight = "h-[clamp(2.5rem,5.6dvh,3rem)]";
+
 export default function SignupPage() {
   const reducedMotion = useReducedMotion();
 
@@ -66,10 +73,7 @@ export default function SignupPage() {
   }
 
   return (
-    <main
-      data-page="signup"
-      className="fixed inset-0 isolate flex h-dvh w-full items-center justify-center overflow-hidden bg-[#070a0e] p-2 text-white selection:bg-[#b7f56a] selection:text-[#070a0e] sm:p-4 lg:p-5"
-    >
+    <main className="relative isolate flex h-dvh w-full items-center justify-center overflow-hidden bg-[#070a0e] px-3 pb-3 pt-12 text-white selection:bg-[#b7f56a] selection:text-[#070a0e] sm:px-6 sm:pb-5 sm:pt-14 lg:px-8">
       {/* Background */}
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_85%_10%,rgba(183,245,106,0.08),transparent_40%),radial-gradient(ellipse_at_10%_90%,rgba(65,110,80,0.08),transparent_35%)]" />
 
@@ -78,20 +82,20 @@ export default function SignupPage() {
       {/* Back link */}
       <Link
         href="/"
-        className="absolute left-4 top-3 z-30 inline-flex items-center gap-2 text-xs font-medium text-[#9ba6b5] transition hover:text-white sm:left-6 sm:top-5 lg:left-8"
+        className="absolute left-5 top-4 z-30 inline-flex items-center gap-2 text-xs font-medium text-[#9ba6b5] transition hover:text-white sm:left-8 sm:top-5"
       >
         <ArrowLeft size={15} />
         Back to home
       </Link>
 
       {/* Main card */}
-      <div className="grid h-full max-h-[820px] w-full max-w-6xl grid-cols-1 overflow-hidden rounded-2xl border border-white/[0.09] bg-[#0b1016]/95 shadow-[0_30px_100px_rgba(0,0,0,0.45)] sm:rounded-3xl lg:grid-cols-[0.85fr_1.15fr]">
+      <div className="grid h-full max-h-[800px] w-full max-w-6xl grid-cols-1 overflow-hidden rounded-3xl border border-white/[0.09] bg-[#0b1016]/95 shadow-[0_30px_100px_rgba(0,0,0,0.45)] lg:grid-cols-[0.85fr_1.15fr]">
         {/* Desktop information panel */}
         <motion.aside
           initial={reducedMotion ? false : { opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
-          className="relative hidden min-h-0 flex-col justify-between overflow-hidden border-r border-white/[0.07] bg-[#0d1319] p-8 lg:flex xl:p-10"
+          className="relative hidden min-h-0 flex-col justify-between gap-6 overflow-hidden border-r border-white/[0.07] bg-[#0d1319] p-10 lg:flex xl:p-12"
         >
           <div className="pointer-events-none absolute -left-20 bottom-10 h-64 w-64 rounded-full bg-[#b7f56a]/[0.06] blur-[80px]" />
 
@@ -105,8 +109,8 @@ export default function SignupPage() {
             </span>
           </Link>
 
-          <div className="relative py-6">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#b7f56a]/15 bg-[#b7f56a]/[0.06] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#b7f56a]">
+          <div className="relative">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#b7f56a]/15 bg-[#b7f56a]/[0.06] px-3.5 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#b7f56a]">
               <Trophy size={13} />
               Start your next season
             </div>
@@ -119,14 +123,14 @@ export default function SignupPage() {
               <span className="text-[#b7f56a]">Your story.</span>
             </h1>
 
-            <p className="mt-5 max-w-sm text-sm leading-7 text-[#98a4b3]">
+            <p className="mt-5 hidden max-w-sm text-sm leading-7 text-[#98a4b3] [@media(min-height:700px)]:block">
               Create your account and bring your football competitions to life
               with fixtures, match simulation, and league standings.
             </p>
 
-            <div className="mt-7 rounded-2xl border border-white/[0.08] bg-white/[0.025] p-5">
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#b7f56a]/10 text-[#b7f56a]">
+            <div className="mt-8 hidden rounded-2xl border border-white/[0.08] bg-white/[0.025] p-6 [@media(min-height:820px)]:block">
+              <div className="flex items-center gap-3.5">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#b7f56a]/10 text-[#b7f56a]">
                   <ShieldCheck size={20} />
                 </span>
 
@@ -146,7 +150,7 @@ export default function SignupPage() {
                   "Simulate your matches",
                   "Follow your standings",
                 ].map((item) => (
-                  <div key={item} className="flex items-center gap-2.5">
+                  <div key={item} className="flex items-center gap-3">
                     <Check size={14} className="text-[#b7f56a]" />
                     <span className="text-xs text-[#aeb8c7]">{item}</span>
                   </div>
@@ -165,15 +169,15 @@ export default function SignupPage() {
           initial={reducedMotion ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="flex min-h-0 flex-col justify-center overflow-hidden p-5 sm:p-8 lg:p-8 xl:p-10"
+          className="flex min-h-0 flex-col justify-center overflow-hidden px-5 py-4 sm:px-10 lg:px-12 xl:px-14"
         >
-          {/* Mobile brand */}
+          {/* Mobile brand (hidden on short screens) */}
           <Link
             href="/"
-            className="mb-4 flex shrink-0 items-center gap-2 lg:hidden"
+            className="mb-4 hidden shrink-0 items-center gap-2.5 lg:hidden [@media(min-height:720px)]:flex"
           >
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#b7f56a]/25 bg-[#b7f56a]/10 text-[#b7f56a]">
-              <Goal size={20} />
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#b7f56a]/25 bg-[#b7f56a]/10 text-[#b7f56a]">
+              <Goal size={21} />
             </span>
 
             <span className="text-base font-bold">
@@ -181,7 +185,7 @@ export default function SignupPage() {
             </span>
           </Link>
 
-          <div className="mb-5 shrink-0">
+          <div className="mb-[clamp(0.75rem,3dvh,2rem)] shrink-0">
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#b7f56a]">
               Create your account
             </p>
@@ -190,25 +194,25 @@ export default function SignupPage() {
               Join FootballSim
             </h2>
 
-            <p className="mt-2 text-sm leading-6 text-[#909cac]">
+            <p className="mt-2 hidden text-sm leading-6 text-[#909cac] [@media(min-height:680px)]:block">
               Set up your account and start building your football universe.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col gap-[clamp(0.5rem,1.9dvh,1.25rem)]"
+          >
             {/* Full name */}
             <div>
-              <label
-                htmlFor="name"
-                className="mb-1.5 block text-xs font-semibold text-[#d4dbe4]"
-              >
+              <label htmlFor="name" className={labelClass}>
                 Full name
               </label>
 
               <div className="relative">
                 <UserRound
                   size={17}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-[#738092]"
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#738092]"
                 />
 
                 <input
@@ -221,24 +225,21 @@ export default function SignupPage() {
                   onChange={(event) => setName(event.target.value)}
                   required
                   minLength={2}
-                  className="h-11 w-full rounded-xl border border-white/[0.1] bg-[#080c11] pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-[#586474] focus:border-[#b7f56a]/60 focus:ring-2 focus:ring-[#b7f56a]/10"
+                  className={`${inputClass} pr-4`}
                 />
               </div>
             </div>
 
             {/* Email */}
             <div>
-              <label
-                htmlFor="email"
-                className="mb-1.5 block text-xs font-semibold text-[#d4dbe4]"
-              >
+              <label htmlFor="email" className={labelClass}>
                 Email address
               </label>
 
               <div className="relative">
                 <Mail
                   size={17}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-[#738092]"
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#738092]"
                 />
 
                 <input
@@ -250,24 +251,21 @@ export default function SignupPage() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   required
-                  className="h-11 w-full rounded-xl border border-white/[0.1] bg-[#080c11] pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-[#586474] focus:border-[#b7f56a]/60 focus:ring-2 focus:ring-[#b7f56a]/10"
+                  className={`${inputClass} pr-4`}
                 />
               </div>
             </div>
 
             {/* Password */}
             <div>
-              <label
-                htmlFor="password"
-                className="mb-1.5 block text-xs font-semibold text-[#d4dbe4]"
-              >
+              <label htmlFor="password" className={labelClass}>
                 Password
               </label>
 
               <div className="relative">
                 <LockKeyhole
                   size={17}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-[#738092]"
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#738092]"
                 />
 
                 <input
@@ -280,7 +278,7 @@ export default function SignupPage() {
                   onChange={(event) => setPassword(event.target.value)}
                   required
                   minLength={8}
-                  className="h-11 w-full rounded-xl border border-white/[0.1] bg-[#080c11] pl-11 pr-12 text-sm text-white outline-none transition placeholder:text-[#586474] focus:border-[#b7f56a]/60 focus:ring-2 focus:ring-[#b7f56a]/10"
+                  className={`${inputClass} pr-12`}
                 />
 
                 <button
@@ -296,17 +294,14 @@ export default function SignupPage() {
 
             {/* Confirm password */}
             <div>
-              <label
-                htmlFor="confirmPassword"
-                className="mb-1.5 block text-xs font-semibold text-[#d4dbe4]"
-              >
+              <label htmlFor="confirmPassword" className={labelClass}>
                 Confirm password
               </label>
 
               <div className="relative">
                 <LockKeyhole
                   size={17}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-[#738092]"
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#738092]"
                 />
 
                 <input
@@ -318,7 +313,7 @@ export default function SignupPage() {
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
                   required
-                  className="h-11 w-full rounded-xl border border-white/[0.1] bg-[#080c11] pl-11 pr-12 text-sm text-white outline-none transition placeholder:text-[#586474] focus:border-[#b7f56a]/60 focus:ring-2 focus:ring-[#b7f56a]/10 mb-3"
+                  className={`${inputClass} pr-12`}
                 />
 
                 <button
@@ -339,7 +334,7 @@ export default function SignupPage() {
             </div>
 
             {/* Terms */}
-            <label className="flex cursor-pointer items-start gap-3 pt-1">
+            <label className="flex cursor-pointer items-start gap-3">
               <input
                 type="checkbox"
                 checked={acceptedTerms}
@@ -357,7 +352,7 @@ export default function SignupPage() {
             {error && (
               <p
                 role="alert"
-                className="rounded-xl border border-red-400/20 bg-red-400/[0.06] px-4 py-3 text-xs leading-5 text-red-300"
+                className="rounded-xl border border-red-400/20 bg-red-400/[0.06] px-4 py-2.5 text-xs leading-5 text-red-300"
               >
                 {error}
               </p>
@@ -367,7 +362,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-[#b7f56a] text-sm font-bold text-[#10150a] transition hover:bg-[#c9ff87] disabled:cursor-not-allowed disabled:opacity-60 mb-3"
+              className={`group flex ${buttonHeight} w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-[#b7f56a] text-sm font-bold text-[#10150a] transition hover:bg-[#c9ff87] disabled:cursor-not-allowed disabled:opacity-60`}
             >
               {loading ? "Creating account..." : "Create account"}
 
@@ -380,7 +375,7 @@ export default function SignupPage() {
             </button>
           </form>
 
-          <div className="my-4 flex shrink-0 items-center gap-3">
+          <div className="my-[clamp(0.6rem,2.4dvh,1.75rem)] flex shrink-0 items-center gap-3">
             <span className="h-px flex-1 bg-white/[0.08]" />
 
             <span className="whitespace-nowrap text-[10px] text-[#687586]">
@@ -392,12 +387,12 @@ export default function SignupPage() {
 
           <Link
             href="/login"
-            className="flex h-11 w-full shrink-0 items-center justify-center rounded-xl border border-white/[0.12] bg-white/[0.02] text-sm font-semibold text-[#d0d7e0] transition hover:border-[#b7f56a]/30 hover:bg-white/[0.04]"
+            className={`flex ${buttonHeight} w-full shrink-0 items-center justify-center rounded-xl border border-white/[0.12] bg-white/[0.02] text-sm font-semibold text-[#d0d7e0] transition hover:border-[#b7f56a]/30 hover:bg-white/[0.04]`}
           >
             Sign in instead
           </Link>
 
-          <p className="mt-3 shrink-0 text-center text-[10px] leading-5 text-[#687586]">
+          <p className="mt-4 hidden shrink-0 text-center text-[10px] leading-5 text-[#687586] [@media(min-height:760px)]:block">
             Built for the love of the game.
           </p>
         </motion.section>
