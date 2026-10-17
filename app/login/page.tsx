@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -16,6 +17,19 @@ import {
   Trophy,
 } from "lucide-react";
 
+type LoginResponse = {
+  accessToken?: string;
+  tokenType?: string;
+  expiresAtUtc?: string;
+  message?: string;
+  title?: string;
+  user?: {
+    id: string;
+    fullName: string;
+    email: string;
+  };
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const reducedMotion = useReducedMotion();
@@ -26,31 +40,95 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
 
-    if (!email.trim() || !password) {
+    const normalizedEmail = email.trim();
+
+    if (!normalizedEmail || !password) {
       setError("Please enter your email and password.");
+      return;
+    }
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
+
+    if (!apiUrl) {
+      setError(
+        "The API address is not configured. Please check your .env.local file.",
+      );
       return;
     }
 
     setLoading(true);
 
-    // Demo only: replace this with your real authentication API.
-    window.setTimeout(() => {
-      setLoading(false);
-      setError(
-        "Authentication is not connected yet. Connect your backend to sign in.",
+    try {
+      const response = await fetch(`${apiUrl}/api/Auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          password,
+        }),
+      });
+
+      const result = (await response.json().catch(() => null)) as
+        | LoginResponse
+        | null;
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          setError("Invalid email or password. Please try again.");
+        } else {
+          setError(
+            result?.message ??
+              result?.title ??
+              "Unable to sign in. Please try again.",
+          );
+        }
+
+        return;
+      }
+
+      if (!result?.accessToken || !result.user?.id) {
+        setError(
+          "The server returned an incomplete login response. Please try again.",
+        );
+        return;
+      }
+
+      // Store the access token for this browser session.
+      sessionStorage.setItem(
+        "footballsim_access_token",
+        result.accessToken,
       );
-    }, 700);
+
+      sessionStorage.setItem(
+        "footballsim_user",
+        JSON.stringify(result.user),
+      );
+
+      router.replace("/dashboard");
+    } catch {
+      setError(
+        "Unable to connect to FootballSim. Check that the API is running and try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#070a0e] px-5 py-10 text-white selection:bg-[#b7f56a] selection:text-[#070a0e] sm:px-8">
+      {/* Background */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_15%_10%,rgba(183,245,106,0.09),transparent_40%),radial-gradient(ellipse_at_90%_90%,rgba(65,110,80,0.08),transparent_35%)]" />
+
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:linear-gradient(to_bottom,black,transparent_85%)]" />
 
+      {/* Back link */}
       <Link
         href="/"
         className="absolute left-5 top-5 inline-flex items-center gap-2 text-xs font-medium text-[#9ba6b5] transition hover:text-white sm:left-8 sm:top-8"
@@ -59,7 +137,9 @@ export default function LoginPage() {
         Back to home
       </Link>
 
+      {/* Main card */}
       <div className="relative z-10 grid w-full max-w-5xl overflow-hidden rounded-3xl border border-white/[0.09] bg-[#0b1016]/95 shadow-[0_30px_100px_rgba(0,0,0,0.45)] lg:grid-cols-[0.9fr_1.1fr]">
+        {/* Information panel */}
         <motion.aside
           initial={reducedMotion ? false : { opacity: 0, x: -15 }}
           animate={{ opacity: 1, x: 0 }}
@@ -72,6 +152,7 @@ export default function LoginPage() {
             <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#b7f56a]/25 bg-[#b7f56a]/10 text-[#b7f56a]">
               <Goal size={24} />
             </span>
+
             <span className="text-lg font-bold tracking-tight">
               Football<span className="text-[#b7f56a]">Sim</span>
             </span>
@@ -106,6 +187,7 @@ export default function LoginPage() {
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#b7f56a]/10 text-[#b7f56a]">
                     <ShieldCheck size={12} />
                   </span>
+
                   <span className="text-xs text-[#c1cad5]">{item}</span>
                 </div>
               ))}
@@ -117,12 +199,14 @@ export default function LoginPage() {
           </p>
         </motion.aside>
 
+        {/* Login form */}
         <motion.section
           initial={reducedMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45 }}
           className="p-6 sm:p-10 lg:p-12 xl:p-14"
         >
+          {/* Mobile brand */}
           <Link
             href="/"
             className="mb-9 inline-flex items-center gap-2 lg:hidden"
@@ -130,6 +214,7 @@ export default function LoginPage() {
             <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#b7f56a]/25 bg-[#b7f56a]/10 text-[#b7f56a]">
               <Goal size={20} />
             </span>
+
             <span className="font-bold">
               Football<span className="text-[#b7f56a]">Sim</span>
             </span>
@@ -139,15 +224,18 @@ export default function LoginPage() {
             <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#b7f56a]">
               Welcome back
             </p>
+
             <h2 className="text-3xl font-semibold tracking-[-0.055em] sm:text-4xl">
               Sign in to FootballSim
             </h2>
+
             <p className="mt-3 text-sm leading-6 text-[#909cac]">
               Enter your account details to continue.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Email */}
             <div>
               <label
                 htmlFor="email"
@@ -155,13 +243,16 @@ export default function LoginPage() {
               >
                 Email address
               </label>
+
               <div className="relative">
                 <Mail
                   size={17}
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-[#738092]"
                 />
+
                 <input
                   id="email"
+                  name="email"
                   type="email"
                   autoComplete="email"
                   placeholder="you@example.com"
@@ -173,6 +264,7 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {/* Password */}
             <div>
               <div className="mb-2 flex items-center justify-between gap-3">
                 <label
@@ -181,6 +273,7 @@ export default function LoginPage() {
                 >
                   Password
                 </label>
+
                 <Link
                   href="/forgot-password"
                   className="text-[11px] font-medium text-[#b7f56a] transition hover:text-[#d2ff9e]"
@@ -194,8 +287,10 @@ export default function LoginPage() {
                   size={17}
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-[#738092]"
                 />
+
                 <input
                   id="password"
+                  name="password"
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   placeholder="Enter your password"
@@ -204,9 +299,11 @@ export default function LoginPage() {
                   required
                   className="h-12 w-full rounded-xl border border-white/[0.1] bg-[#080c11] pl-11 pr-12 text-sm text-white outline-none transition placeholder:text-[#586474] focus:border-[#b7f56a]/60 focus:ring-2 focus:ring-[#b7f56a]/10"
                 />
+
                 <button
                   type="button"
                   aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#8490a0] transition hover:bg-white/[0.06] hover:text-white"
                 >
@@ -215,21 +312,25 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {/* Error feedback */}
             {error && (
               <p
                 role="alert"
+                aria-live="polite"
                 className="rounded-xl border border-red-400/20 bg-red-400/[0.06] px-4 py-3 text-xs leading-5 text-red-300"
               >
                 {error}
               </p>
             )}
 
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
               className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#b7f56a] text-sm font-bold text-[#10150a] transition hover:bg-[#c9ff87] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading ? "Checking..." : "Sign in"}
+              {loading ? "Signing in..." : "Sign in"}
+
               {!loading && (
                 <ArrowRight
                   size={16}
@@ -241,9 +342,11 @@ export default function LoginPage() {
 
           <div className="my-7 flex items-center gap-4">
             <span className="h-px flex-1 bg-white/[0.08]" />
+
             <span className="text-[10px] text-[#687586]">
               NEW TO FOOTBALLSIM?
             </span>
+
             <span className="h-px flex-1 bg-white/[0.08]" />
           </div>
 
