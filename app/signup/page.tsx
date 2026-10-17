@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -24,6 +25,17 @@ const labelClass = "mb-1.5 block text-xs font-semibold text-[#d4dbe4]";
 
 const buttonHeight = "h-[clamp(2.5rem,5.6dvh,3rem)]";
 
+type RegisterResponse = {
+  message?: string;
+  title?: string;
+  errors?: Record<string, string[]>;
+  user?: {
+    id: string;
+    fullName: string;
+    email: string;
+  };
+};
+
 export default function SignupPage() {
   const reducedMotion = useReducedMotion();
 
@@ -37,12 +49,17 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
 
     if (name.trim().length < 2) {
       setError("Please enter your full name.");
+      return;
+    }
+
+    if (!email.trim()) {
+      setError("Please enter your email address.");
       return;
     }
 
@@ -61,15 +78,73 @@ export default function SignupPage() {
       return;
     }
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
+
+    if (!apiUrl) {
+      setError(
+        "The API address is not configured. Please check your .env.local file.",
+      );
+      return;
+    }
+
     setLoading(true);
 
-    // Demo only: replace this with your real registration API.
-    window.setTimeout(() => {
-      setLoading(false);
+    try {
+      const response = await fetch(`${apiUrl}/api/Auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          fullName: name.trim(),
+          email: email.trim(),
+          password,
+        }),
+      });
+
+      const result = (await response.json().catch(() => null)) as
+        | RegisterResponse
+        | null;
+
+      if (!response.ok) {
+        const validationError = result?.errors
+          ? Object.values(result.errors).flat()[0]
+          : undefined;
+
+        if (response.status === 409) {
+          setError(
+            result?.message ??
+              "An account with this email already exists. Please sign in instead.",
+          );
+        } else {
+          setError(
+            result?.message ??
+              validationError ??
+              result?.title ??
+              "Unable to create your account. Please check your details and try again.",
+          );
+        }
+
+        return;
+      }
+
+      if (!result?.user?.id) {
+        setError(
+          "Your registration response was incomplete. Please check your account before trying again.",
+        );
+        return;
+      }
+
+      // Registration succeeded. Redirect to the sign-in page.
+      window.location.assign("/login");
+    } catch {
       setError(
-        "Account registration is not connected yet. Connect your backend to create an account.",
+        "Unable to connect to FootballSim. Please check that the API is running and try again.",
       );
-    }, 700);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -171,7 +246,7 @@ export default function SignupPage() {
           transition={{ duration: 0.35 }}
           className="flex min-h-0 flex-col justify-center overflow-hidden px-5 py-4 sm:px-10 lg:px-12 xl:px-14"
         >
-          {/* Mobile brand (hidden on short screens) */}
+          {/* Mobile brand */}
           <Link
             href="/"
             className="mb-4 hidden shrink-0 items-center gap-2.5 lg:hidden [@media(min-height:720px)]:flex"
@@ -352,6 +427,7 @@ export default function SignupPage() {
             {error && (
               <p
                 role="alert"
+                aria-live="polite"
                 className="rounded-xl border border-red-400/20 bg-red-400/[0.06] px-4 py-2.5 text-xs leading-5 text-red-300"
               >
                 {error}
