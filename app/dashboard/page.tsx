@@ -2,7 +2,12 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import {
@@ -29,6 +34,10 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+
+// =====================================================
+// TYPES
+// =====================================================
 
 type User = {
   id: string;
@@ -67,7 +76,12 @@ type DashboardSummary = {
 type NavigationItem = {
   label: string;
   icon: LucideIcon;
+  section: string;
 };
+
+// =====================================================
+// NAVIGATION
+// =====================================================
 
 const navigation: {
   heading: string;
@@ -76,34 +90,102 @@ const navigation: {
   {
     heading: "Overview",
     items: [
-      { label: "Dashboard", icon: LayoutDashboard },
+      {
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        section: "dashboard",
+      },
     ],
   },
   {
     heading: "Competitions",
     items: [
-      { label: "All Competitions", icon: Trophy },
-      { label: "Create Competition", icon: Plus },
-      { label: "League Phase", icon: Activity },
-      { label: "Knockout Stage", icon: ArrowRight },
+      {
+        label: "All Competitions",
+        icon: Trophy,
+        section: "competitions",
+      },
+      {
+        label: "Create Competition",
+        icon: Plus,
+        section: "create-competition",
+      },
+      {
+        label: "League Phase",
+        icon: Activity,
+        section: "league-phase",
+      },
+      {
+        label: "Knockout Stage",
+        icon: ArrowRight,
+        section: "knockout-stage",
+      },
     ],
   },
   {
     heading: "Football Data",
     items: [
-      { label: "Teams", icon: Users },
-      { label: "Fixtures", icon: CalendarDays },
-      { label: "Results", icon: CalendarClock },
-      { label: "Standings", icon: ChartNoAxesCombined },
+      {
+        label: "Teams",
+        icon: Users,
+        section: "teams",
+      },
+      {
+        label: "Fixtures",
+        icon: CalendarDays,
+        section: "fixtures",
+      },
+      {
+        label: "Results",
+        icon: CalendarClock,
+        section: "results",
+      },
+      {
+        label: "Standings",
+        icon: ChartNoAxesCombined,
+        section: "standings",
+      },
     ],
   },
   {
     heading: "System",
     items: [
-      { label: "Settings", icon: Settings },
+      {
+        label: "Settings",
+        icon: Settings,
+        section: "settings",
+      },
     ],
   },
 ];
+
+const allNavigationItems = navigation.flatMap(
+  (group) => group.items
+);
+
+const validSections = new Set(
+  allNavigationItems.map((item) => item.section)
+);
+
+function getSectionFromUrl(): string {
+  if (typeof window === "undefined") {
+    return "dashboard";
+  }
+
+  const params = new URLSearchParams(
+    window.location.search
+  );
+
+  const section = params.get("section") ?? "dashboard";
+
+  return validSections.has(section)
+    ? section
+    : "dashboard";
+}
+
+// =====================================================
+// HELPERS
+// =====================================================
 
 function formatFirstName(fullName: string): string {
   const firstName = fullName.trim().split(/\s+/)[0];
@@ -161,34 +243,127 @@ function formatDate(date: Date): string {
 const panel =
   "rounded-2xl border border-white/[0.075] bg-[#101319]";
 
-const muted =
-  "text-[#8b98aa]";
+const muted = "text-[#8b98aa]";
+
+// =====================================================
+// DASHBOARD COMPONENT
+// =====================================================
 
 export default function DashboardPage() {
   const router = useRouter();
   const reducedMotion = useReducedMotion();
 
+  // Authentication
   const [user, setUser] = useState<User | null>(null);
+
+  const [checkingSession, setCheckingSession] =
+    useState(true);
+
+  const [signingOut, setSigningOut] = useState(false);
+
+  // Dashboard data
   const [summary, setSummary] =
     useState<DashboardSummary | null>(null);
 
-  const [checkingSession, setCheckingSession] = useState(true);
-  const [loadingSummary, setLoadingSummary] = useState(true);
-  const [dashboardError, setDashboardError] = useState("");
+  const [loadingSummary, setLoadingSummary] =
+    useState(true);
 
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [dashboardError, setDashboardError] =
+    useState("");
+
+  // Navigation
+  const [activeSection, setActiveSection] =
+    useState("dashboard");
+
+  const [mobileNavOpen, setMobileNavOpen] =
+    useState(false);
+
+  const [accountMenuOpen, setAccountMenuOpen] =
+    useState(false);
+
+  const [notificationsOpen, setNotificationsOpen] =
+    useState(false);
+
   const [searchOpen, setSearchOpen] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [activeSection, setActiveSection] =
-    useState("Dashboard");
-  const [signingOut, setSigningOut] = useState(false);
+  const [currentDate, setCurrentDate] =
+    useState<Date | null>(null);
 
-  const [currentDate, setCurrentDate] = useState<Date | null>(
-    null
+  // ===================================================
+  // SYNCHRONIZE SECTION WITH URL
+  // ===================================================
+
+  useEffect(() => {
+    function syncSection() {
+      setActiveSection(getSectionFromUrl());
+    }
+
+    syncSection();
+
+    window.addEventListener("popstate", syncSection);
+
+    return () => {
+      window.removeEventListener(
+        "popstate",
+        syncSection
+      );
+    };
+  }, []);
+
+  const selectSection = useCallback(
+    (section: string) => {
+      const nextSection = validSections.has(section)
+        ? section
+        : "dashboard";
+
+      setActiveSection(nextSection);
+
+      setMobileNavOpen(false);
+      setSearchOpen(false);
+      setSearchQuery("");
+      setAccountMenuOpen(false);
+      setNotificationsOpen(false);
+
+      const url = new URL(window.location.href);
+
+      if (nextSection === "dashboard") {
+        url.searchParams.delete("section");
+      } else {
+        url.searchParams.set(
+          "section",
+          nextSection
+        );
+      }
+
+      const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+
+      window.history.pushState(
+        null,
+        "",
+        nextUrl
+      );
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    },
+    []
   );
+
+  const activeNavigationItem =
+    allNavigationItems.find(
+      (item) => item.section === activeSection
+    );
+
+  const activeSectionLabel =
+    activeNavigationItem?.label ?? "Dashboard";
+
+  // ===================================================
+  // CURRENT DATE
+  // ===================================================
 
   useEffect(() => {
     setCurrentDate(new Date());
@@ -200,18 +375,25 @@ export default function DashboardPage() {
     return () => window.clearInterval(interval);
   }, []);
 
+  // ===================================================
+  // AUTHENTICATION + DASHBOARD DATA
+  // ===================================================
+
   const loadDashboard = useCallback(
     async (signal?: AbortSignal) => {
       try {
         setDashboardError("");
         setLoadingSummary(true);
 
-        const sessionResponse = await fetch("/api/auth/me", {
-          method: "GET",
-          credentials: "same-origin",
-          cache: "no-store",
-          signal,
-        });
+        const sessionResponse = await fetch(
+          "/api/auth/me",
+          {
+            method: "GET",
+            credentials: "same-origin",
+            cache: "no-store",
+            signal,
+          }
+        );
 
         if (
           sessionResponse.status === 401 ||
@@ -222,16 +404,21 @@ export default function DashboardPage() {
         }
 
         if (!sessionResponse.ok) {
-          throw new Error("Unable to validate your session.");
+          throw new Error(
+            "Unable to validate your session."
+          );
         }
 
-        const sessionData = await sessionResponse.json();
+        const sessionData =
+          await sessionResponse.json();
 
         if (
           !sessionData?.user?.id ||
           !sessionData?.user?.fullName
         ) {
-          throw new Error("Invalid account information.");
+          throw new Error(
+            "Invalid account information."
+          );
         }
 
         if (signal?.aborted) return;
@@ -273,7 +460,9 @@ export default function DashboardPage() {
           typeof data.totalCompetitions !== "number" ||
           !Array.isArray(data.upcomingFixtures)
         ) {
-          throw new Error("Unexpected dashboard API response.");
+          throw new Error(
+            "Unexpected dashboard API response."
+          );
         }
 
         if (signal?.aborted) return;
@@ -305,16 +494,23 @@ export default function DashboardPage() {
     return () => controller.abort();
   }, [loadDashboard]);
 
+  // ===================================================
+  // LOGOUT
+  // ===================================================
+
   async function handleSignOut() {
     if (signingOut) return;
 
     setSigningOut(true);
 
     try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "same-origin",
-      });
+      const response = await fetch(
+        "/api/auth/logout",
+        {
+          method: "POST",
+          credentials: "same-origin",
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Unable to sign out.");
@@ -326,17 +522,15 @@ export default function DashboardPage() {
       setDashboardError(
         "Unable to sign out. Please try again."
       );
+
       setSigningOut(false);
       setAccountMenuOpen(false);
     }
   }
 
-  function selectSection(label: string) {
-    setActiveSection(label);
-    setMobileNavOpen(false);
-    setSearchOpen(false);
-    setSearchQuery("");
-  }
+  // ===================================================
+  // SEARCH
+  // ===================================================
 
   const filteredNavigation = useMemo(
     () =>
@@ -350,6 +544,10 @@ export default function DashboardPage() {
       })),
     [searchQuery]
   );
+
+  // ===================================================
+  // DASHBOARD STATS
+  // ===================================================
 
   const stats = [
     {
@@ -389,13 +587,18 @@ export default function DashboardPage() {
       ? Math.min(
           100,
           Math.round(
-            (summary.matchesPlayed / summary.totalMatches) *
+            (summary.matchesPlayed /
+              summary.totalMatches) *
               100
           )
         )
       : 0;
 
   const competition = summary?.activeCompetition;
+
+  // ===================================================
+  // LOADING SCREEN
+  // ===================================================
 
   if (checkingSession) {
     return (
@@ -408,6 +611,10 @@ export default function DashboardPage() {
     );
   }
 
+  // ===================================================
+  // SESSION ERROR
+  // ===================================================
+
   if (!user) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#080a0d] px-5 text-white">
@@ -416,13 +623,16 @@ export default function DashboardPage() {
             size={28}
             className="mx-auto text-[#b7f56a]"
           />
+
           <h1 className="mt-4 text-xl font-semibold">
             Session unavailable
           </h1>
+
           <p className="mt-2 text-sm text-[#8b98aa]">
             {dashboardError ||
               "Please sign in to continue."}
           </p>
+
           <Link
             href="/login"
             className="mt-5 inline-flex rounded-xl bg-[#b7f56a] px-5 py-3 text-sm font-semibold text-black"
@@ -438,8 +648,13 @@ export default function DashboardPage() {
   const fullName = formatFullName(user.fullName);
   const initials = getInitials(user.fullName);
 
+  // ===================================================
+  // MAIN RENDER
+  // ===================================================
+
   return (
     <main className="min-h-screen bg-[#080a0d] text-white">
+      {/* Background glow */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -right-48 -top-48 h-[520px] w-[520px] rounded-full bg-[#b7f56a]/[0.035] blur-[120px]" />
       </div>
@@ -454,7 +669,10 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* Sidebar */}
+      {/* =============================================
+          SIDEBAR
+      ============================================== */}
+
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex w-[264px] flex-col border-r border-white/[0.065] bg-[#0b0e12] transition-transform duration-300 lg:translate-x-0 ${
           mobileNavOpen
@@ -462,15 +680,20 @@ export default function DashboardPage() {
             : "-translate-x-full"
         }`}
       >
+        {/* Logo */}
         <div className="flex h-[78px] shrink-0 items-center justify-between border-b border-white/[0.06] px-6">
           <Link
             href="/dashboard"
-            onClick={() => selectSection("Dashboard")}
+            onClick={(event) => {
+              event.preventDefault();
+              selectSection("dashboard");
+            }}
             className="flex items-center gap-3"
           >
             <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#b7f56a]/30 bg-[#b7f56a]/[0.08] text-[#b7f56a]">
               <Goal size={21} />
             </span>
+
             <span className="text-[17px] font-bold tracking-tight">
               Football
               <span className="text-[#b7f56a]">
@@ -489,6 +712,7 @@ export default function DashboardPage() {
           </button>
         </div>
 
+        {/* Sidebar search */}
         <div className="px-4 pb-3 pt-4">
           <button
             type="button"
@@ -496,15 +720,18 @@ export default function DashboardPage() {
             className="flex h-10 w-full items-center gap-2.5 rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 text-xs text-[#8b98aa]"
           >
             <Search size={15} />
+
             <span className="flex-1 text-left">
               Find a workspace
             </span>
+
             <span className="rounded-md border border-white/[0.09] px-1.5 py-1 text-[9px]">
               Ctrl K
             </span>
           </button>
         </div>
 
+        {/* Sidebar navigation */}
         <nav className="flex-1 space-y-6 overflow-y-auto px-3 pb-5 pt-3">
           {navigation.map((group) => (
             <div key={group.heading}>
@@ -515,15 +742,16 @@ export default function DashboardPage() {
               <div className="space-y-1">
                 {group.items.map((item) => {
                   const Icon = item.icon;
+
                   const active =
-                    activeSection === item.label;
+                    activeSection === item.section;
 
                   return (
                     <button
-                      key={item.label}
+                      key={item.section}
                       type="button"
                       onClick={() =>
-                        selectSection(item.label)
+                        selectSection(item.section)
                       }
                       className={`relative flex min-h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-xs font-medium transition ${
                         active
@@ -559,6 +787,7 @@ export default function DashboardPage() {
           ))}
         </nav>
 
+        {/* Sidebar bottom */}
         <div className="shrink-0 border-t border-white/[0.06] p-3">
           <div className="mb-3 rounded-xl border border-[#b7f56a]/10 bg-[#b7f56a]/[0.035] p-3">
             <div className="mb-2 flex items-center gap-2">
@@ -566,19 +795,21 @@ export default function DashboardPage() {
                 size={16}
                 className="text-[#b7f56a]"
               />
+
               <span className="text-[11px] font-semibold">
                 Manager workspace
               </span>
             </div>
+
             <p className="text-[10px] leading-4 text-[#758192]">
-              Manage competitions, clubs and seasons in one
-              place.
+              Manage competitions, clubs and seasons in
+              one place.
             </p>
           </div>
 
           <button
             type="button"
-            onClick={() => selectSection("Settings")}
+            onClick={() => selectSection("settings")}
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-xs text-[#98a3b2] hover:bg-white/[0.04]"
           >
             <Settings size={15} />
@@ -587,8 +818,12 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      {/* Main workspace */}
+      {/* =============================================
+          MAIN WORKSPACE
+      ============================================== */}
+
       <div className="relative min-h-screen lg:pl-[264px]">
+        {/* Header */}
         <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#080a0d]/90 backdrop-blur-xl">
           <div className="flex h-[78px] items-center justify-between gap-3 px-4 sm:px-7 xl:px-10">
             <div className="flex min-w-0 items-center gap-3">
@@ -605,11 +840,13 @@ export default function DashboardPage() {
                 <span className="hidden text-[#647083] sm:inline">
                   Workspace
                 </span>
+
                 <span className="hidden text-[#414c5b] sm:inline">
                   /
                 </span>
+
                 <span className="truncate font-medium text-[#dfe5ec]">
-                  {activeSection}
+                  {activeSectionLabel}
                 </span>
               </div>
             </div>
@@ -617,6 +854,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2 sm:gap-4">
               <div className="hidden items-center gap-2 rounded-full border border-[#b7f56a]/15 bg-[#b7f56a]/[0.045] px-3 py-2 md:flex">
                 <span className="h-2 w-2 rounded-full bg-[#b7f56a]" />
+
                 <span className="text-[10px] text-[#b7d997]">
                   {loadingSummary
                     ? "Refreshing data"
@@ -624,6 +862,7 @@ export default function DashboardPage() {
                 </span>
               </div>
 
+              {/* Search */}
               <button
                 type="button"
                 aria-label="Search workspace"
@@ -633,13 +872,16 @@ export default function DashboardPage() {
                 <Search size={17} />
               </button>
 
+              {/* Notifications */}
               <div className="relative">
                 <button
                   type="button"
                   aria-label="Notifications"
                   aria-expanded={notificationsOpen}
                   onClick={() =>
-                    setNotificationsOpen(!notificationsOpen)
+                    setNotificationsOpen(
+                      !notificationsOpen
+                    )
                   }
                   className="rounded-lg p-2 text-[#8b97a8] hover:bg-white/[0.05]"
                 >
@@ -651,6 +893,7 @@ export default function DashboardPage() {
                     <p className="text-xs font-semibold">
                       Notifications
                     </p>
+
                     <p className="mt-2 text-xs leading-5 text-[#8793a4]">
                       Competition notifications will appear
                       here when connected.
@@ -659,19 +902,23 @@ export default function DashboardPage() {
                 )}
               </div>
 
+              {/* Account menu */}
               <div className="relative">
                 <button
                   type="button"
                   aria-label="Account menu"
                   aria-expanded={accountMenuOpen}
                   onClick={() =>
-                    setAccountMenuOpen(!accountMenuOpen)
+                    setAccountMenuOpen(
+                      !accountMenuOpen
+                    )
                   }
                   className="flex items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.035] p-1"
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#b7f56a]/20 bg-[#b7f56a]/[0.11] text-[10px] font-bold text-[#c7fa8c]">
                     {initials}
                   </span>
+
                   <ChevronDown
                     size={13}
                     className="mr-1 hidden text-[#788596] sm:block"
@@ -684,6 +931,7 @@ export default function DashboardPage() {
                       <p className="truncate text-xs font-semibold">
                         {fullName}
                       </p>
+
                       <p className="mt-1 truncate text-[10px] text-[#7d8999]">
                         {user.email}
                       </p>
@@ -693,7 +941,7 @@ export default function DashboardPage() {
                       type="button"
                       onClick={() => {
                         setAccountMenuOpen(false);
-                        selectSection("Settings");
+                        selectSection("settings");
                       }}
                       className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-xs text-[#a9b4c1] hover:bg-white/[0.05]"
                     >
@@ -708,6 +956,7 @@ export default function DashboardPage() {
                       className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-xs text-red-300 hover:bg-red-400/[0.08] disabled:opacity-50"
                     >
                       <LogOut size={14} />
+
                       {signingOut
                         ? "Signing out..."
                         : "Sign out"}
@@ -719,7 +968,10 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        {/* Search dialog */}
+        {/* ===========================================
+            SEARCH DIALOG
+        ============================================ */}
+
         {searchOpen && (
           <div
             role="dialog"
@@ -733,6 +985,7 @@ export default function DashboardPage() {
                   size={18}
                   className="text-[#8490a0]"
                 />
+
                 <input
                   autoFocus
                   value={searchQuery}
@@ -742,6 +995,7 @@ export default function DashboardPage() {
                   placeholder="Find a dashboard section..."
                   className="h-14 min-w-0 flex-1 bg-transparent text-sm outline-none"
                 />
+
                 <button
                   type="button"
                   onClick={() => {
@@ -762,10 +1016,10 @@ export default function DashboardPage() {
 
                     return (
                       <button
-                        key={item.label}
+                        key={item.section}
                         type="button"
                         onClick={() =>
-                          selectSection(item.label)
+                          selectSection(item.section)
                         }
                         className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-xs text-[#b2bdca] hover:bg-white/[0.05]"
                       >
@@ -773,6 +1027,7 @@ export default function DashboardPage() {
                           size={16}
                           className="text-[#b7f56a]"
                         />
+
                         {item.label}
                       </button>
                     );
@@ -790,7 +1045,12 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* ===========================================
+            CONTENT
+        ============================================ */}
+
         <div className="mx-auto w-full max-w-[1720px] px-4 pb-10 pt-7 sm:px-7 sm:pt-9 xl:px-10">
+          {/* API error */}
           {dashboardError && (
             <div
               role="alert"
@@ -799,6 +1059,7 @@ export default function DashboardPage() {
               <p className="text-xs text-red-200">
                 {dashboardError}
               </p>
+
               <button
                 type="button"
                 onClick={() => void loadDashboard()}
@@ -809,23 +1070,34 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {activeSection !== "Dashboard" ? (
+          {/* =========================================
+              OTHER SECTIONS
+          ========================================== */}
+
+          {activeSection !== "dashboard" ? (
             <section className="flex min-h-[60vh] flex-col items-center justify-center text-center">
               <Goal
                 size={36}
                 className="text-[#b7f56a]"
               />
+
               <h1 className="mt-6 text-3xl font-semibold">
-                {activeSection}
+                {activeSectionLabel}
               </h1>
+
               <p className="mt-3 max-w-md text-sm leading-6 text-[#8d9aab]">
                 This section will be connected to the
                 corresponding FootballSim API endpoints.
               </p>
+
+              <div className="mt-4 rounded-lg border border-white/[0.07] bg-white/[0.025] px-4 py-2 text-[10px] text-[#8b98aa]">
+                Section: {activeSection}
+              </div>
+
               <button
                 type="button"
                 onClick={() =>
-                  selectSection("Dashboard")
+                  selectSection("dashboard")
                 }
                 className="mt-6 flex items-center gap-2 rounded-xl bg-[#b7f56a] px-5 py-3 text-xs font-bold text-black"
               >
@@ -835,7 +1107,10 @@ export default function DashboardPage() {
             </section>
           ) : (
             <>
-              {/* Greeting */}
+              {/* =====================================
+                  GREETING
+              ====================================== */}
+
               <motion.section
                 initial={
                   reducedMotion
@@ -875,10 +1150,12 @@ export default function DashboardPage() {
                     <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#b7f56a]/10 text-[#b7f56a]">
                       <Trophy size={18} />
                     </span>
+
                     <div className="min-w-0">
                       <p className="text-[9px] text-[#778597]">
                         Latest competition
                       </p>
+
                       <p className="mt-1 truncate text-xs font-semibold">
                         {competition?.name ||
                           "No competition created"}
@@ -889,7 +1166,9 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={() =>
-                      selectSection("Create Competition")
+                      selectSection(
+                        "create-competition"
+                      )
                     }
                     className="flex h-[52px] items-center justify-center gap-3 rounded-xl bg-[#b7f56a] px-5 text-xs font-bold text-black transition hover:bg-[#c9ff87]"
                   >
@@ -900,12 +1179,16 @@ export default function DashboardPage() {
                 </div>
               </motion.section>
 
-              {/* Statistics */}
+              {/* =====================================
+                  STATISTICS
+              ====================================== */}
+
               <section className="mb-5">
                 <div className="mb-3 flex items-center justify-between">
                   <p className="text-[9px] font-semibold uppercase tracking-[0.17em] text-[#657287]">
                     Live database snapshot
                   </p>
+
                   <span className="rounded-md border border-white/[0.06] px-2 py-1 text-[9px] text-[#768396]">
                     {loadingSummary
                       ? "Loading"
@@ -947,13 +1230,16 @@ export default function DashboardPage() {
                           >
                             <Icon size={17} />
                           </span>
+
                           <Activity
                             size={15}
                             className="text-[#465365]"
                           />
                         </div>
 
-                        <p className={`mt-5 text-xs ${muted}`}>
+                        <p
+                          className={`mt-5 text-xs ${muted}`}
+                        >
                           {stat.label}
                         </p>
 
@@ -967,7 +1253,8 @@ export default function DashboardPage() {
                           {stat.detail}
                         </p>
 
-                        {stat.label === "Matches played" && (
+                        {stat.label ===
+                          "Matches played" && (
                           <div className="mt-4 h-[3px] overflow-hidden rounded-full bg-white/[0.07]">
                             <div
                               className="h-full rounded-full bg-blue-400 transition-all"
@@ -983,7 +1270,10 @@ export default function DashboardPage() {
                 </div>
               </section>
 
-              {/* Main dashboard content */}
+              {/* =====================================
+                  MAIN DASHBOARD GRID
+              ====================================== */}
+
               <div className="grid items-start gap-4 2xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.9fr)]">
                 <div className="space-y-4">
                   {/* Competition overview */}
@@ -1018,7 +1308,8 @@ export default function DashboardPage() {
                         {summary?.registeredTeams ?? 0}{" "}
                         registered teams
                         {" · "}
-                        {summary?.totalMatches ?? 0} fixtures
+                        {summary?.totalMatches ?? 0}{" "}
+                        fixtures
                       </p>
                     </div>
 
@@ -1037,22 +1328,24 @@ export default function DashboardPage() {
                               }}
                             />
                           </div>
+
                           <span className="text-xs font-semibold">
                             {matchProgress}%
                           </span>
                         </div>
 
                         <p className="mt-2 text-[10px] text-[#829286]">
-                          {summary?.matchesPlayed ?? 0} played
-                          out of{" "}
-                          {summary?.totalMatches ?? 0} matches
+                          {summary?.matchesPlayed ?? 0}{" "}
+                          played out of{" "}
+                          {summary?.totalMatches ?? 0}{" "}
+                          matches
                         </p>
                       </div>
 
                       <button
                         type="button"
                         onClick={() =>
-                          selectSection("All Competitions")
+                          selectSection("competitions")
                         }
                         className="flex items-center gap-2 text-xs font-semibold text-[#c7fb8b]"
                       >
@@ -1062,19 +1355,25 @@ export default function DashboardPage() {
                     </div>
                   </section>
 
-                  {/* Matchday */}
-                  <section className={`${panel} p-5 sm:p-7`}>
+                  {/* Matchday overview */}
+                  <section
+                    className={`${panel} p-5 sm:p-7`}
+                  >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
                         <p className="text-[9px] font-semibold uppercase tracking-wider text-[#74869f]">
                           Matchday control center
                         </p>
+
                         <h2 className="mt-2 text-lg font-semibold">
                           Matchday overview
                         </h2>
-                        <p className={`mt-1 text-xs ${muted}`}>
-                          Real matchday statistics from your
-                          database.
+
+                        <p
+                          className={`mt-1 text-xs ${muted}`}
+                        >
+                          Real matchday statistics from
+                          your database.
                         </p>
                       </div>
 
@@ -1092,6 +1391,7 @@ export default function DashboardPage() {
                             summary?.currentMatchday ?? 0
                           ).padStart(2, "0")}
                         </span>
+
                         <p className="mt-2 text-[9px] uppercase tracking-wider text-[#748196]">
                           Latest played
                         </p>
@@ -1101,11 +1401,15 @@ export default function DashboardPage() {
                         {[
                           {
                             label: "Fixtures",
-                            value: summary?.totalMatches ?? "—",
+                            value:
+                              summary?.totalMatches ??
+                              "—",
                           },
                           {
                             label: "Played",
-                            value: summary?.matchesPlayed ?? "—",
+                            value:
+                              summary?.matchesPlayed ??
+                              "—",
                           },
                           {
                             label: "Remaining",
@@ -1122,6 +1426,7 @@ export default function DashboardPage() {
                             <p className="text-[9px] uppercase text-[#758297]">
                               {item.label}
                             </p>
+
                             <p className="mt-2 text-lg font-semibold">
                               {item.value}
                             </p>
@@ -1134,16 +1439,20 @@ export default function DashboardPage() {
 
                 <div className="space-y-4">
                   {/* Upcoming fixtures */}
-                  <section className={`${panel} p-5 sm:p-6`}>
+                  <section
+                    className={`${panel} p-5 sm:p-6`}
+                  >
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="text-[9px] font-semibold uppercase tracking-wider text-[#73839a]">
                           Up next
                         </p>
+
                         <h2 className="mt-2 text-base font-semibold">
                           Upcoming fixtures
                         </h2>
                       </div>
+
                       <CalendarClock
                         size={19}
                         className="text-[#8391a3]"
@@ -1151,10 +1460,13 @@ export default function DashboardPage() {
                     </div>
 
                     {loadingSummary ? (
-                      <p className={`py-12 text-xs ${muted}`}>
+                      <p
+                        className={`py-12 text-xs ${muted}`}
+                      >
                         Loading fixtures...
                       </p>
-                    ) : summary?.upcomingFixtures.length ? (
+                    ) : summary?.upcomingFixtures
+                        .length ? (
                       <div className="mt-4">
                         {summary.upcomingFixtures.map(
                           (fixture) => (
@@ -1166,17 +1478,22 @@ export default function DashboardPage() {
                                 <p className="min-w-0 flex-1 truncate text-xs font-semibold">
                                   {fixture.homeTeam}
                                 </p>
+
                                 <span className="text-[9px] text-[#586678]">
                                   VS
                                 </span>
+
                                 <p className="min-w-0 flex-1 truncate text-right text-xs font-semibold">
                                   {fixture.awayTeam}
                                 </p>
                               </div>
+
                               <div className="mt-3 flex justify-between text-[10px] text-[#77869a]">
                                 <span>
-                                  Matchday {fixture.matchDay}
+                                  Matchday{" "}
+                                  {fixture.matchDay}
                                 </span>
+
                                 <span>
                                   {fixture.isPlayed
                                     ? "Played"
@@ -1193,12 +1510,14 @@ export default function DashboardPage() {
                           size={24}
                           className="mx-auto text-[#7b899b]"
                         />
+
                         <p className="mt-4 text-xs font-medium">
                           No upcoming fixtures
                         </p>
+
                         <p className="mt-2 text-[10px] leading-5 text-[#7b899b]">
-                          Create fixtures for your competition
-                          to see them here.
+                          Create fixtures for your
+                          competition to see them here.
                         </p>
                       </div>
                     )}
@@ -1206,7 +1525,7 @@ export default function DashboardPage() {
                     <button
                       type="button"
                       onClick={() =>
-                        selectSection("Fixtures")
+                        selectSection("fixtures")
                       }
                       className="mt-3 flex w-full items-center justify-end gap-2 text-[10px] font-semibold text-[#b7f56a]"
                     >
@@ -1216,16 +1535,20 @@ export default function DashboardPage() {
                   </section>
 
                   {/* Competition journey */}
-                  <section className={`${panel} p-5 sm:p-6`}>
+                  <section
+                    className={`${panel} p-5 sm:p-6`}
+                  >
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-[9px] font-semibold uppercase tracking-wider text-[#74849a]">
                           Tournament setup
                         </p>
+
                         <h2 className="mt-2 text-base font-semibold">
                           Competition journey
                         </h2>
                       </div>
+
                       <Trophy
                         size={19}
                         className="text-[#b7f56a]"
@@ -1243,21 +1566,28 @@ export default function DashboardPage() {
                         },
                         {
                           title: "Register teams",
-                          detail: `${summary?.registeredTeams ?? 0} teams registered.`,
+                          detail: `${
+                            summary?.registeredTeams ??
+                            0
+                          } teams registered.`,
                           done: Boolean(
                             summary?.registeredTeams
                           ),
                         },
                         {
                           title: "Generate fixtures",
-                          detail: `${summary?.totalMatches ?? 0} matches scheduled.`,
+                          detail: `${
+                            summary?.totalMatches ?? 0
+                          } matches scheduled.`,
                           done: Boolean(
                             summary?.totalMatches
                           ),
                         },
                         {
                           title: "Simulate matches",
-                          detail: `${summary?.matchesPlayed ?? 0} matches completed.`,
+                          detail: `${
+                            summary?.matchesPlayed ?? 0
+                          } matches completed.`,
                           done: Boolean(
                             summary?.matchesPlayed
                           ),
@@ -1285,6 +1615,7 @@ export default function DashboardPage() {
                             <p className="text-xs font-semibold">
                               {step.title}
                             </p>
+
                             <p className="mt-1 text-[10px] leading-4 text-[#7b889a]">
                               {step.detail}
                             </p>
@@ -1296,7 +1627,7 @@ export default function DashboardPage() {
                     <button
                       type="button"
                       onClick={() =>
-                        selectSection("All Competitions")
+                        selectSection("competitions")
                       }
                       className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-[#b7f56a]/15 bg-[#b7f56a]/[0.045] py-3 text-xs font-semibold text-[#c0f58c]"
                     >
@@ -1309,10 +1640,15 @@ export default function DashboardPage() {
             </>
           )}
 
+          {/* =========================================
+              FOOTER
+          ========================================== */}
+
           <footer className="mt-10 flex flex-col gap-2 border-t border-white/[0.06] pt-5 text-[10px] text-[#647184] sm:flex-row sm:justify-between">
             <p>
               FootballSim / Football management workspace
             </p>
+
             <p>
               Signed in as{" "}
               <span className="text-[#9ba7b6]">
