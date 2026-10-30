@@ -1,22 +1,31 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-type Context = {
+type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-const guid =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const API_URL =
+  process.env.FOOTBALLSIM_API_URL ??
+  "http://localhost:5295";
+
+const GUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(
   request: NextRequest,
-  { params }: Context
+  context: RouteContext
 ) {
-  const { id } = await params;
+  const { id } = await context.params;
 
-  if (!guid.test(id)) {
+  const competitionId = decodeURIComponent(id).trim();
+
+  if (!GUID_REGEX.test(competitionId)) {
     return NextResponse.json(
-      { message: "Invalid competition ID." },
+      {
+        message: "Invalid competition ID.",
+        receivedId: competitionId,
+      },
       { status: 400 }
     );
   }
@@ -31,27 +40,16 @@ export async function GET(
     );
   }
 
-  const baseUrl = process.env.FOOTBALLSIM_API_URL;
-
-  if (!baseUrl) {
-    return NextResponse.json(
-      {
-        message: "FOOTBALLSIM_API_URL is not configured.",
-      },
-      { status: 500 }
-    );
-  }
-
   try {
     const response = await fetch(
-      `${baseUrl.replace(/\/$/, "")}/api/CompetitionTeams/${id}`,
+      `${API_URL.replace(/\/$/, "")}/api/CompetitionTeams/${competitionId}`,
       {
+        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
         },
         cache: "no-store",
-        signal: request.signal,
       }
     );
 
@@ -60,33 +58,28 @@ export async function GET(
       .catch(() => null);
 
     if (!response.ok) {
-      const message =
-        data &&
-        typeof data === "object" &&
-        "message" in data &&
-        typeof data.message === "string"
-          ? data.message
-          : `Teams API returned HTTP ${response.status}.`;
-
       return NextResponse.json(
-        { message },
+        {
+          message: "Unable to retrieve registered teams.",
+          backendStatus: response.status,
+          details: data,
+        },
         { status: response.status }
       );
     }
 
     if (!Array.isArray(data)) {
       return NextResponse.json(
-        { message: "Unexpected teams API response." },
+        {
+          message: "Unexpected response from backend.",
+        },
         { status: 502 }
       );
     }
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error(
-      "Competition teams proxy failed:",
-      error
-    );
+    console.error("Competition teams error:", error);
 
     return NextResponse.json(
       {

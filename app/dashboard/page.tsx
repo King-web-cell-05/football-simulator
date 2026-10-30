@@ -30,33 +30,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-// Competition details fallback keeps this page usable when the
-// dedicated details component is not available in the project.
-function CompetitionDetails({
-  competitionId,
-  onBack,
-}: {
-  competitionId: string;
-  onBack: () => void;
-}) {
-  return (
-    <section className={`${panel} p-6`}>
-      <button
-        type="button"
-        onClick={onBack}
-        className={`mb-5 flex items-center gap-2 text-xs ${muted}`}
-      >
-        <ArrowRight size={16} className="rotate-180" />
-        Back to competitions
-      </button>
-
-      <h1 className="text-2xl font-semibold">Competition details</h1>
-      <p className={`mt-2 text-xs ${muted}`}>
-        Competition ID: {competitionId}
-      </p>
-    </section>
-  );
-}
+import CompetitionDetails from "@/components/dashboard/competitions-detail";
 
 // =====================================================
 // TYPES
