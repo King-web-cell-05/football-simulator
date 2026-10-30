@@ -2,7 +2,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-export const runtime = "nodejs";
 type JwtClaims = Record<string, unknown>;
 
 function getClaim(

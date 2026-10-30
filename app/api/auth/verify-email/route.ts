@@ -1,7 +1,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   const apiUrl = process.env.FOOTBALLSIM_API_URL;
