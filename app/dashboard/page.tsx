@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -12,13 +13,8 @@ import {
   CalendarDays,
   CalendarClock,
   ChartNoAxesCombined,
-  Check,
   ChevronDown,
-  Clock3,
   Goal,
-  CircleDot,
-  Zap,
-  Radio,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -33,6 +29,34 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+
+// Competition details fallback keeps this page usable when the
+// dedicated details component is not available in the project.
+function CompetitionDetails({
+  competitionId,
+  onBack,
+}: {
+  competitionId: string;
+  onBack: () => void;
+}) {
+  return (
+    <section className={`${panel} p-6`}>
+      <button
+        type="button"
+        onClick={onBack}
+        className={`mb-5 flex items-center gap-2 text-xs ${muted}`}
+      >
+        <ArrowRight size={16} className="rotate-180" />
+        Back to competitions
+      </button>
+
+      <h1 className="text-2xl font-semibold">Competition details</h1>
+      <p className={`mt-2 text-xs ${muted}`}>
+        Competition ID: {competitionId}
+      </p>
+    </section>
+  );
+}
 
 // =====================================================
 // TYPES
@@ -165,20 +189,44 @@ const navigation: {
   },
 ];
 
-const allNavigationItems = navigation.flatMap((group) => group.items);
+const allNavigationItems = navigation.flatMap(
+  (group) => group.items
+);
 
-const validSections = new Set(allNavigationItems.map((item) => item.section));
+const validSections = new Set(
+  allNavigationItems.map((item) => item.section)
+);
 
 function getSectionFromUrl(): string {
   if (typeof window === "undefined") {
     return "dashboard";
   }
 
-  const params = new URLSearchParams(window.location.search);
+  const params = new URLSearchParams(
+    window.location.search
+  );
 
   const section = params.get("section") ?? "dashboard";
 
-  return validSections.has(section) ? section : "dashboard";
+  return validSections.has(section)
+    ? section
+    : "dashboard";
+}
+
+function getCompetitionIdFromUrl(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const params = new URLSearchParams(
+    window.location.search
+  );
+
+  if (params.get("section") !== "competitions") {
+    return null;
+  }
+
+  return params.get("competitionId");
 }
 
 // =====================================================
@@ -203,7 +251,8 @@ function formatFullName(fullName: string): string {
     .filter(Boolean)
     .map(
       (part) =>
-        part.charAt(0).toLocaleUpperCase() + part.slice(1).toLocaleLowerCase(),
+        part.charAt(0).toLocaleUpperCase() +
+        part.slice(1).toLocaleLowerCase()
     )
     .join(" ");
 }
@@ -237,11 +286,15 @@ function formatDate(date: Date): string {
   }).format(date);
 }
 
-const panel = "rounded-2xl border border-white/[0.075] bg-[#101319]";
+const panel =
+  "rounded-2xl border border-white/[0.075] bg-[#101319]";
 
 const muted = "text-[#8b98aa]";
 
-// Football-inspired decorative elements: no images or extra dependencies.
+// =====================================================
+// FOOTBALL VISUALS
+// =====================================================
+
 function FootballBall({
   className = "",
   animate = true,
@@ -253,12 +306,24 @@ function FootballBall({
     <motion.div
       aria-hidden="true"
       className={`pointer-events-none select-none ${className}`}
-      animate={animate ? { rotate: 360, y: [0, -8, 0] } : undefined}
+      animate={
+        animate
+          ? { rotate: 360, y: [0, -8, 0] }
+          : undefined
+      }
       transition={
         animate
           ? {
-              rotate: { duration: 24, repeat: Infinity, ease: "linear" },
-              y: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+              rotate: {
+                duration: 24,
+                repeat: Infinity,
+                ease: "linear",
+              },
+              y: {
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut",
+              },
             }
           : undefined
       }
@@ -268,7 +333,13 @@ function FootballBall({
         fill="none"
         className="h-full w-full drop-shadow-[0_0_25px_rgba(183,245,106,0.12)]"
       >
-        <circle cx="50" cy="50" r="46" stroke="currentColor" strokeWidth="2" />
+        <circle
+          cx="50"
+          cy="50"
+          r="46"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
         <path
           d="M50 28 68 41 61 62 39 62 32 41Z"
           fill="currentColor"
@@ -286,7 +357,11 @@ function FootballBall({
   );
 }
 
-function PitchLines({ className = "" }: { className?: string }) {
+function PitchLines({
+  className = "",
+}: {
+  className?: string;
+}) {
   return (
     <svg
       aria-hidden="true"
@@ -304,17 +379,55 @@ function PitchLines({ className = "" }: { className?: string }) {
         stroke="currentColor"
       />
       <path d="M280 12V288" stroke="currentColor" />
-      <circle cx="280" cy="150" r="54" stroke="currentColor" />
-      <circle cx="280" cy="150" r="3" fill="currentColor" />
-      <rect x="12" y="74" width="90" height="152" stroke="currentColor" />
-      <rect x="458" y="74" width="90" height="152" stroke="currentColor" />
-      <rect x="12" y="113" width="34" height="74" stroke="currentColor" />
-      <rect x="514" y="113" width="34" height="74" stroke="currentColor" />
+      <circle
+        cx="280"
+        cy="150"
+        r="54"
+        stroke="currentColor"
+      />
+      <circle
+        cx="280"
+        cy="150"
+        r="3"
+        fill="currentColor"
+      />
+      <rect
+        x="12"
+        y="74"
+        width="90"
+        height="152"
+        stroke="currentColor"
+      />
+      <rect
+        x="458"
+        y="74"
+        width="90"
+        height="152"
+        stroke="currentColor"
+      />
+      <rect
+        x="12"
+        y="113"
+        width="34"
+        height="74"
+        stroke="currentColor"
+      />
+      <rect
+        x="514"
+        y="113"
+        width="34"
+        height="74"
+        stroke="currentColor"
+      />
     </svg>
   );
 }
 
-function SkeletonLine({ className = "" }: { className?: string }) {
+function SkeletonLine({
+  className = "",
+}: {
+  className?: string;
+}) {
   return (
     <div
       aria-hidden="true"
@@ -323,94 +436,31 @@ function SkeletonLine({ className = "" }: { className?: string }) {
   );
 }
 
-function DashboardSkeleton({ section = "dashboard" }: { section?: string }) {
+function DashboardSkeleton() {
   return (
-    <main
-      role="status"
-      aria-label="Loading FootballSim dashboard"
-      className="min-h-screen bg-[#080a0d] text-white"
-    >
-      <div className="fixed inset-y-0 left-0 hidden w-[264px] border-r border-white/[0.06] bg-[#0b0e12] p-5 lg:block">
+    <main className="min-h-screen bg-[#080a0d] p-6 text-white">
+      <div className="mx-auto max-w-6xl space-y-7">
         <div className="flex items-center gap-3">
-          <FootballBall className="h-9 w-9 text-[#b7f56a]" />
-          <span className="text-lg font-bold">
+          <FootballBall className="h-10 w-10 text-[#b7f56a]" />
+          <span className="text-xl font-bold">
             Football<span className="text-[#b7f56a]">Sim</span>
           </span>
         </div>
-        <div className="mt-12 space-y-5">
-          {Array.from({ length: 3 }, (_, group) => (
-            <div key={group} className="space-y-3">
-              <SkeletonLine className="h-2 w-20" />
-              {Array.from({ length: group === 0 ? 1 : 4 }, (_, i) => (
-                <SkeletonLine key={i} className="h-9 w-full" />
-              ))}
+
+        <SkeletonLine className="mt-14 h-10 w-72" />
+        <SkeletonLine className="h-4 w-96 max-w-full" />
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div
+              key={i}
+              className={`${panel} space-y-5 p-6`}
+            >
+              <SkeletonLine className="h-10 w-10" />
+              <SkeletonLine className="h-4 w-32" />
+              <SkeletonLine className="h-9 w-20" />
             </div>
           ))}
-        </div>
-      </div>
-      <div className="lg:pl-[264px]">
-        <div className="flex h-[78px] items-center justify-between border-b border-white/[0.06] px-5 sm:px-9">
-          <SkeletonLine className="h-4 w-32" />
-          <SkeletonLine className="h-9 w-28 rounded-full" />
-        </div>
-        <div className="mx-auto max-w-[1720px] space-y-6 px-4 py-9 sm:px-9">
-          <div className="flex flex-wrap items-center justify-between gap-6">
-            <div className="space-y-4">
-              <SkeletonLine className="h-3 w-44" />
-              <SkeletonLine className="h-10 w-72 max-w-[80vw]" />
-              <SkeletonLine className="h-3 w-64 max-w-[70vw]" />
-            </div>
-            <FootballBall className="h-16 w-16 text-[#b7f56a]/70" />
-          </div>
-          {section === "dashboard" ? (
-            <>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {Array.from({ length: 4 }, (_, i) => (
-                  <div
-                    key={i}
-                    className="rounded-2xl border border-white/[0.07] bg-[#101319] p-5"
-                  >
-                    <SkeletonLine className="h-9 w-9" />
-                    <SkeletonLine className="mt-5 h-3 w-28" />
-                    <SkeletonLine className="mt-3 h-9 w-20" />
-                    <SkeletonLine className="mt-3 h-2 w-36" />
-                  </div>
-                ))}
-              </div>
-              <div className="grid gap-4 2xl:grid-cols-[1.65fr_0.9fr]">
-                <div className="space-y-4">
-                  <div className="h-72 rounded-2xl border border-[#b7f56a]/10 bg-[#101713] p-7">
-                    <SkeletonLine className="h-6 w-36" />
-                    <SkeletonLine className="mt-12 h-8 w-2/3" />
-                    <SkeletonLine className="mt-5 h-3 w-1/2" />
-                    <SkeletonLine className="mt-14 h-2 w-3/4" />
-                  </div>
-                  <div className="h-52 rounded-2xl border border-white/[0.07] bg-[#101319] p-7">
-                    <SkeletonLine className="h-6 w-40" />
-                    <SkeletonLine className="mt-10 h-14 w-3/4" />
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="h-72 rounded-2xl border border-white/[0.07] bg-[#101319] p-6">
-                    <SkeletonLine className="h-6 w-40" />
-                    {Array.from({ length: 3 }, (_, i) => (
-                      <SkeletonLine key={i} className="mt-6 h-10 w-full" />
-                    ))}
-                  </div>
-                  <div className="h-52 rounded-2xl border border-white/[0.07] bg-[#101319] p-6">
-                    <SkeletonLine className="h-6 w-40" />
-                    <SkeletonLine className="mt-7 h-10 w-full" />
-                  </div>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="h-80 rounded-2xl border border-white/[0.07] bg-[#101319] p-8">
-              <SkeletonLine className="h-7 w-48" />
-              <SkeletonLine className="mt-8 h-4 w-3/4" />
-            </div>
-          )}
-          <span className="sr-only">Loading your football workspace</span>
         </div>
       </div>
     </main>
@@ -420,6 +470,7 @@ function DashboardSkeleton({ section = "dashboard" }: { section?: string }) {
 // =====================================================
 // ALL COMPETITIONS — LIVE API
 // =====================================================
+
 function CompetitionsSection({
   onCreate,
   onOpen,
@@ -428,6 +479,7 @@ function CompetitionsSection({
   onOpen: (id: string) => void;
 }) {
   const reducedMotion = useReducedMotion();
+
   const [items, setItems] = useState<CompetitionRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -436,50 +488,90 @@ function CompetitionsSection({
 
   useEffect(() => {
     const controller = new AbortController();
+
     async function load() {
       setLoading(true);
       setError("");
+
       try {
         const response = await fetch("/api/competitions", {
           credentials: "same-origin",
           cache: "no-store",
           signal: controller.signal,
         });
-        const payload: unknown = await response.json().catch(() => null);
+
+        const payload: unknown = await response
+          .json()
+          .catch(() => null);
+
         if (!response.ok) {
           const message =
-            payload && typeof payload === "object" && "message" in payload &&
+            payload &&
+            typeof payload === "object" &&
+            "message" in payload &&
             typeof payload.message === "string"
               ? payload.message
               : `Could not load competitions (HTTP ${response.status}).`;
+
           throw new Error(message);
         }
-        if (!Array.isArray(payload)) throw new Error("Unexpected competitions response.");
-        const parsed: CompetitionRecord[] = payload.filter((entry): entry is CompetitionRecord =>
-          entry !== null && typeof entry === "object" &&
-          typeof entry.id === "string" && typeof entry.name === "string"
-        ).map((entry) => ({
-          id: entry.id,
-          name: entry.name,
-          season: typeof entry.season === "string" ? entry.season : "",
-          createdDate: typeof entry.createdDate === "string" ? entry.createdDate : "",
-        }));
-        if (!controller.signal.aborted) setItems(parsed);
+
+        if (!Array.isArray(payload)) {
+          throw new Error("Unexpected competitions response.");
+        }
+
+        const parsed: CompetitionRecord[] = payload
+          .filter(
+            (entry): entry is CompetitionRecord =>
+              entry !== null &&
+              typeof entry === "object" &&
+              typeof entry.id === "string" &&
+              typeof entry.name === "string"
+          )
+          .map((entry) => ({
+            id: entry.id,
+            name: entry.name,
+            season:
+              typeof entry.season === "string"
+                ? entry.season
+                : "",
+            createdDate:
+              typeof entry.createdDate === "string"
+                ? entry.createdDate
+                : "",
+          }));
+
+        if (!controller.signal.aborted) {
+          setItems(parsed);
+        }
       } catch (cause) {
         if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : "Unable to load competitions.");
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : "Unable to load competitions."
+          );
         }
       } finally {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     }
+
     void load();
+
     return () => controller.abort();
   }, [reload]);
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
-    return items.filter((item) => `${item.name} ${item.season}`.toLowerCase().includes(term));
+
+    return items.filter((item) =>
+      `${item.name} ${item.season}`
+        .toLowerCase()
+        .includes(term)
+    );
   }, [items, query]);
 
   return (
@@ -487,38 +579,96 @@ function CompetitionsSection({
       <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
         <div>
           <p className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b7f56a]">
-            <Goal size={15} /> FootballSim / Tournament Hub
+            <Goal size={15} />
+            FootballSim / Tournament Hub
           </p>
+
           <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-            All <span className="text-[#b7f56a]">Competitions</span>
+            All{" "}
+            <span className="text-[#b7f56a]">
+              Competitions
+            </span>
           </h1>
-          <p className="mt-2 text-sm text-[#8b98aa]">Your tournaments, seasons and competition workspace.</p>
+
+          <p className="mt-2 text-sm text-[#8b98aa]">
+            Your tournaments, seasons and competition workspace.
+          </p>
         </div>
-        <button type="button" onClick={onCreate} className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#b7f56a] px-5 text-xs font-bold text-[#080a0d] hover:bg-[#caff91]">
-          <Plus size={16} /> Create competition
+
+        <button
+          type="button"
+          onClick={onCreate}
+          className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#b7f56a] px-5 text-xs font-bold text-[#080a0d] transition hover:bg-[#caff91]"
+        >
+          <Plus size={16} />
+          Create competition
         </button>
       </div>
+
       <div className="relative overflow-hidden rounded-2xl border border-[#b7f56a]/15 bg-gradient-to-r from-[#142019] via-[#101a16] to-[#101319] p-6 sm:p-8">
         <PitchLines className="absolute -right-24 -top-20 h-64 w-[450px] text-[#b7f56a]/[0.09]" />
-        <FootballBall className="absolute right-8 top-6 hidden h-24 w-24 text-[#b7f56a]/30 sm:block" animate={!reducedMotion} />
+
+        <FootballBall
+          className="absolute right-8 top-6 hidden h-24 w-24 text-[#b7f56a]/30 sm:block"
+          animate={!reducedMotion}
+        />
+
         <div className="relative max-w-lg">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#b7f56a]">The competition arena</p>
-          <h2 className="mt-3 text-xl font-semibold sm:text-2xl">Every great tournament starts here.</h2>
-          <p className="mt-2 text-xs leading-6 text-[#9aaa9c]">Manage your tournaments and follow every season from kickoff to the final whistle.</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#b7f56a]">
+            The competition arena
+          </p>
+
+          <h2 className="mt-3 text-xl font-semibold sm:text-2xl">
+            Every great tournament starts here.
+          </h2>
+
+          <p className="mt-2 text-xs leading-6 text-[#9aaa9c]">
+            Manage your tournaments and follow every season
+            from kickoff to the final whistle.
+          </p>
         </div>
       </div>
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:max-w-sm">
-          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#788596]" />
-          <input aria-label="Search competitions" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search competitions or seasons..." className="h-11 w-full rounded-xl border border-white/[0.08] bg-[#101319] pl-11 pr-4 text-xs text-white outline-none placeholder:text-[#667386] focus:border-[#b7f56a]/40" />
+          <Search
+            size={16}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-[#788596]"
+          />
+
+          <input
+            aria-label="Search competitions"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search competitions or seasons..."
+            className="h-11 w-full rounded-xl border border-white/[0.08] bg-[#101319] pl-11 pr-4 text-xs text-white outline-none placeholder:text-[#667386] focus:border-[#b7f56a]/40"
+          />
         </div>
+
         <div className="flex items-center gap-3">
-          <span className="text-xs text-[#8b98aa]">{loading ? "Loading competitions..." : `${filtered.length} competitions`}</span>
-          <button type="button" disabled={loading} aria-label="Refresh competitions" onClick={() => setReload((value) => value + 1)} className="rounded-xl border border-white/[0.08] bg-[#101319] p-3 text-[#b7f56a] disabled:opacity-50"><RefreshCw size={16} className={loading ? "animate-spin" : ""} /></button>
+          <span className="text-xs text-[#8b98aa]">
+            {loading
+              ? "Loading competitions..."
+              : `${filtered.length} competitions`}
+          </span>
+
+          <button
+            type="button"
+            disabled={loading}
+            aria-label="Refresh competitions"
+            onClick={() => setReload((value) => value + 1)}
+            className="rounded-xl border border-white/[0.08] bg-[#101319] p-3 text-[#b7f56a] disabled:opacity-50"
+          >
+            <RefreshCw
+              size={16}
+              className={loading ? "animate-spin" : ""}
+            />
+          </button>
         </div>
       </div>
+
       {loading ? (
-        <div role="status" aria-label="Loading competitions" className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }, (_, i) => (
             <div key={i} className={`${panel} animate-pulse p-6`}>
               <SkeletonLine className="h-12 w-12" />
@@ -529,37 +679,122 @@ function CompetitionsSection({
           ))}
         </div>
       ) : error ? (
-        <div role="alert" className={`${panel} px-6 py-14 text-center`}>
-          <AlertCircle size={28} className="mx-auto text-red-300" />
-          <h3 className="mt-4 font-semibold">Unable to load competitions</h3>
-          <p className="mt-2 text-xs text-[#8b98aa]">{error}</p>
-          <button type="button" onClick={() => setReload((value) => value + 1)} className="mt-5 rounded-xl bg-[#b7f56a] px-5 py-3 text-xs font-bold text-black">Try again</button>
+        <div
+          role="alert"
+          className={`${panel} px-6 py-14 text-center`}
+        >
+          <AlertCircle
+            size={28}
+            className="mx-auto text-red-300"
+          />
+
+          <h3 className="mt-4 font-semibold">
+            Unable to load competitions
+          </h3>
+
+          <p className="mt-2 text-xs text-[#8b98aa]">
+            {error}
+          </p>
+
+          <button
+            type="button"
+            onClick={() => setReload((value) => value + 1)}
+            className="mt-5 rounded-xl bg-[#b7f56a] px-5 py-3 text-xs font-bold text-black"
+          >
+            Try again
+          </button>
         </div>
       ) : filtered.length ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((item, index) => (
-            <motion.article key={item.id} initial={reducedMotion ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: Math.min(index, 8) * 0.04 }} className={`${panel} group relative overflow-hidden p-6 transition-colors hover:border-[#b7f56a]/30`}>
+            <motion.article
+              key={item.id}
+              initial={
+                reducedMotion
+                  ? false
+                  : { opacity: 0, y: 14 }
+              }
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.3,
+                delay: Math.min(index, 8) * 0.04,
+              }}
+              className={`${panel} group relative overflow-hidden p-6 transition-colors hover:border-[#b7f56a]/30`}
+            >
               <div className="flex items-start justify-between">
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#b7f56a]/20 bg-[#b7f56a]/[0.08] text-[#b7f56a]"><Trophy size={22} /></span>
-                <span className="rounded-full border border-white/[0.09] px-3 py-1.5 text-[9px] text-[#a3afbc]">Tournament</span>
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#b7f56a]/20 bg-[#b7f56a]/[0.08] text-[#b7f56a]">
+                  <Trophy size={22} />
+                </span>
+
+                <span className="rounded-full border border-white/[0.09] px-3 py-1.5 text-[9px] text-[#a3afbc]">
+                  Tournament
+                </span>
               </div>
-              <h3 className="mt-7 min-h-12 text-lg font-semibold tracking-tight">{item.name}</h3>
-              <p className="mt-2 text-xs text-[#b7f56a]">{item.season || "Season not specified"}</p>
+
+              <h3 className="mt-7 min-h-12 text-lg font-semibold tracking-tight">
+                {item.name}
+              </h3>
+
+              <p className="mt-2 text-xs text-[#b7f56a]">
+                {item.season || "Season not specified"}
+              </p>
+
               <div className="mt-7 flex items-center gap-2 border-t border-white/[0.07] pt-5 text-[11px] text-[#8794a5]">
-                <CalendarDays size={14} /> Created {item.createdDate && !Number.isNaN(Date.parse(item.createdDate)) ? new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(new Date(item.createdDate)) : "date unavailable"}
+                <CalendarDays size={14} />
+                Created{" "}
+                {item.createdDate &&
+                !Number.isNaN(Date.parse(item.createdDate))
+                  ? new Intl.DateTimeFormat("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    }).format(new Date(item.createdDate))
+                  : "date unavailable"}
               </div>
-              <button type="button" onClick={() => onOpen(item.id)} className="mt-6 flex w-full items-center justify-between rounded-xl border border-[#b7f56a]/15 bg-[#b7f56a]/[0.05] px-4 py-3 text-xs font-semibold text-[#b7f56a] transition hover:bg-[#b7f56a]/[0.11]">
-                Manage competition <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+
+              <button
+                type="button"
+                onClick={() => onOpen(item.id)}
+                className="mt-6 flex w-full items-center justify-between rounded-xl border border-[#b7f56a]/15 bg-[#b7f56a]/[0.05] px-4 py-3 text-xs font-semibold text-[#b7f56a] transition hover:bg-[#b7f56a]/[0.11]"
+              >
+                Manage competition
+
+                <ArrowRight
+                  size={16}
+                  className="transition-transform group-hover:translate-x-1"
+                />
               </button>
             </motion.article>
           ))}
         </div>
       ) : (
         <div className={`${panel} px-6 py-16 text-center`}>
-          <Trophy size={34} className="mx-auto text-[#b7f56a]" />
-          <h3 className="mt-4 text-lg font-semibold">{query ? "No matching competitions" : "No competitions yet"}</h3>
-          <p className="mt-2 text-xs text-[#8b98aa]">{query ? "Try another search term." : "Create your first competition to get started."}</p>
-          {!query && <button type="button" onClick={onCreate} className="mt-5 rounded-xl bg-[#b7f56a] px-5 py-3 text-xs font-bold text-black">Create competition</button>}
+          <Trophy
+            size={34}
+            className="mx-auto text-[#b7f56a]"
+          />
+
+          <h3 className="mt-4 text-lg font-semibold">
+            {query
+              ? "No matching competitions"
+              : "No competitions yet"}
+          </h3>
+
+          <p className="mt-2 text-xs text-[#8b98aa]">
+            {query
+              ? "Try another search term."
+              : "Create your first competition to get started."}
+          </p>
+
+          {!query && (
+            <button
+              type="button"
+              onClick={onCreate}
+              className="mt-5 rounded-xl bg-[#b7f56a] px-5 py-3 text-xs font-bold text-black"
+            >
+              Create competition
+            </button>
+          )}
         </div>
       )}
     </section>
@@ -567,67 +802,61 @@ function CompetitionsSection({
 }
 
 // =====================================================
-// DASHBOARD COMPONENT
+// DASHBOARD PAGE
 // =====================================================
 
 export default function DashboardPage() {
   const router = useRouter();
   const reducedMotion = useReducedMotion();
 
-  // Authentication
   const [user, setUser] = useState<User | null>(null);
-
   const [checkingSession, setCheckingSession] = useState(true);
-
   const [signingOut, setSigningOut] = useState(false);
 
-  // Dashboard data
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [summary, setSummary] =
+    useState<DashboardSummary | null>(null);
 
   const [loadingSummary, setLoadingSummary] = useState(true);
-
   const [dashboardError, setDashboardError] = useState("");
 
-  // Navigation
-  const [activeSection, setActiveSection] = useState("dashboard");
-  const [selectedCompetitionId, setSelectedCompetitionId] = useState<string | null>(null);
+  const [activeSection, setActiveSection] =
+    useState("dashboard");
+
+  const [selectedCompetitionId, setSelectedCompetitionId] =
+    useState<string | null>(null);
 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-
   const [searchOpen, setSearchOpen] = useState(false);
-
   const [searchQuery, setSearchQuery] = useState("");
-
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
 
   // ===================================================
-  // SYNCHRONIZE SECTION WITH URL
+  // URL SYNCHRONIZATION
   // ===================================================
 
   useEffect(() => {
     function syncSection() {
       setActiveSection(getSectionFromUrl());
+      setSelectedCompetitionId(getCompetitionIdFromUrl());
     }
 
     syncSection();
 
     window.addEventListener("popstate", syncSection);
 
-    return () => {
+    return () =>
       window.removeEventListener("popstate", syncSection);
-    };
   }, []);
 
   const selectSection = useCallback((section: string) => {
-    const nextSection = validSections.has(section) ? section : "dashboard";
+    const nextSection = validSections.has(section)
+      ? section
+      : "dashboard";
 
     setActiveSection(nextSection);
     setSelectedCompetitionId(null);
-
     setMobileNavOpen(false);
     setSearchOpen(false);
     setSearchQuery("");
@@ -636,15 +865,19 @@ export default function DashboardPage() {
 
     const url = new URL(window.location.href);
 
+    url.searchParams.delete("competitionId");
+
     if (nextSection === "dashboard") {
       url.searchParams.delete("section");
     } else {
       url.searchParams.set("section", nextSection);
     }
 
-    const nextUrl = `${url.pathname}${url.search}${url.hash}`;
-
-    window.history.pushState(null, "", nextUrl);
+    window.history.pushState(
+      null,
+      "",
+      `${url.pathname}${url.search}${url.hash}`
+    );
 
     window.scrollTo({
       top: 0,
@@ -652,14 +885,56 @@ export default function DashboardPage() {
     });
   }, []);
 
-  const activeNavigationItem = allNavigationItems.find(
-    (item) => item.section === activeSection,
+  const openCompetition = useCallback(
+    (competitionId: string) => {
+      const url = new URL(window.location.href);
+
+      url.searchParams.set("section", "competitions");
+      url.searchParams.set(
+        "competitionId",
+        competitionId
+      );
+
+      window.history.pushState(
+        null,
+        "",
+        `${url.pathname}${url.search}${url.hash}`
+      );
+
+      setActiveSection("competitions");
+      setSelectedCompetitionId(competitionId);
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    },
+    []
   );
 
-  const activeSectionLabel = activeNavigationItem?.label ?? "Dashboard";
+  const closeCompetition = useCallback(() => {
+    const url = new URL(window.location.href);
+
+    url.searchParams.delete("competitionId");
+
+    window.history.pushState(
+      null,
+      "",
+      `${url.pathname}${url.search}${url.hash}`
+    );
+
+    setSelectedCompetitionId(null);
+  }, []);
+
+  const activeNavigationItem = allNavigationItems.find(
+    (item) => item.section === activeSection
+  );
+
+  const activeSectionLabel =
+    activeNavigationItem?.label ?? "Dashboard";
 
   // ===================================================
-  // CURRENT DATE
+  // DATE
   // ===================================================
 
   useEffect(() => {
@@ -673,7 +948,7 @@ export default function DashboardPage() {
   }, []);
 
   // ===================================================
-  // AUTHENTICATION + DASHBOARD DATA
+  // AUTHENTICATION AND DASHBOARD DATA
   // ===================================================
 
   const loadDashboard = useCallback(
@@ -682,26 +957,39 @@ export default function DashboardPage() {
         setDashboardError("");
         setLoadingSummary(true);
 
-        const sessionResponse = await fetch("/api/auth/me", {
-          method: "GET",
-          credentials: "same-origin",
-          cache: "no-store",
-          signal,
-        });
+        const sessionResponse = await fetch(
+          "/api/auth/me",
+          {
+            method: "GET",
+            credentials: "same-origin",
+            cache: "no-store",
+            signal,
+          }
+        );
 
-        if (sessionResponse.status === 401 || sessionResponse.status === 403) {
+        if (
+          sessionResponse.status === 401 ||
+          sessionResponse.status === 403
+        ) {
           router.replace("/login");
           return;
         }
 
         if (!sessionResponse.ok) {
-          throw new Error("Unable to validate your session.");
+          throw new Error(
+            "Unable to validate your session."
+          );
         }
 
         const sessionData = await sessionResponse.json();
 
-        if (!sessionData?.user?.id || !sessionData?.user?.fullName) {
-          throw new Error("Invalid account information.");
+        if (
+          !sessionData?.user?.id ||
+          !sessionData?.user?.fullName
+        ) {
+          throw new Error(
+            "Invalid account information."
+          );
         }
 
         if (signal?.aborted) return;
@@ -709,24 +997,32 @@ export default function DashboardPage() {
         setUser(sessionData.user);
         setCheckingSession(false);
 
-        const summaryResponse = await fetch("/api/dashboard/summary", {
-          method: "GET",
-          credentials: "same-origin",
-          cache: "no-store",
-          signal,
-        });
+        const summaryResponse = await fetch(
+          "/api/dashboard/summary",
+          {
+            method: "GET",
+            credentials: "same-origin",
+            cache: "no-store",
+            signal,
+          }
+        );
 
-        if (summaryResponse.status === 401 || summaryResponse.status === 403) {
+        if (
+          summaryResponse.status === 401 ||
+          summaryResponse.status === 403
+        ) {
           router.replace("/login");
           return;
         }
 
-        const data = await summaryResponse.json().catch(() => null);
+        const data = await summaryResponse
+          .json()
+          .catch(() => null);
 
         if (!summaryResponse.ok) {
           throw new Error(
             data?.message ||
-              `Unable to load dashboard (HTTP ${summaryResponse.status}).`,
+              `Unable to load dashboard (HTTP ${summaryResponse.status}).`
           );
         }
 
@@ -735,7 +1031,9 @@ export default function DashboardPage() {
           typeof data.totalCompetitions !== "number" ||
           !Array.isArray(data.upcomingFixtures)
         ) {
-          throw new Error("Unexpected dashboard API response.");
+          throw new Error(
+            "Unexpected dashboard API response."
+          );
         }
 
         if (signal?.aborted) return;
@@ -745,7 +1043,9 @@ export default function DashboardPage() {
         if (signal?.aborted) return;
 
         setDashboardError(
-          error instanceof Error ? error.message : "Unable to load dashboard.",
+          error instanceof Error
+            ? error.message
+            : "Unable to load dashboard."
         );
       } finally {
         if (!signal?.aborted) {
@@ -754,7 +1054,7 @@ export default function DashboardPage() {
         }
       }
     },
-    [router],
+    [router]
   );
 
   useEffect(() => {
@@ -766,7 +1066,7 @@ export default function DashboardPage() {
   }, [loadDashboard]);
 
   // ===================================================
-  // LOGOUT
+  // SIGN OUT
   // ===================================================
 
   async function handleSignOut() {
@@ -775,10 +1075,13 @@ export default function DashboardPage() {
     setSigningOut(true);
 
     try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "same-origin",
-      });
+      const response = await fetch(
+        "/api/auth/logout",
+        {
+          method: "POST",
+          credentials: "same-origin",
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Unable to sign out.");
@@ -787,46 +1090,54 @@ export default function DashboardPage() {
       router.replace("/login");
       router.refresh();
     } catch {
-      setDashboardError("Unable to sign out. Please try again.");
-
+      setDashboardError(
+        "Unable to sign out. Please try again."
+      );
       setSigningOut(false);
       setAccountMenuOpen(false);
     }
   }
 
+  // ===================================================
+  // SEARCH SHORTCUT
+  // ===================================================
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.key.toLowerCase() === "k"
+      ) {
         event.preventDefault();
         setSearchOpen((value) => !value);
       }
+
       if (event.key === "Escape") {
         setSearchOpen(false);
         setAccountMenuOpen(false);
         setNotificationsOpen(false);
+        setMobileNavOpen(false);
       }
     }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
 
-  // ===================================================
-  // SEARCH
-  // ===================================================
+    window.addEventListener("keydown", onKeyDown);
+
+    return () =>
+      window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   const filteredNavigation = useMemo(
     () =>
-      navigation.map((group) => ({
-        ...group,
-        items: group.items.filter((item) =>
-          item.label.toLowerCase().includes(searchQuery.toLowerCase()),
-        ),
-      })),
-    [searchQuery],
+      allNavigationItems.filter((item) =>
+        item.label
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())
+      ),
+    [searchQuery]
   );
 
   // ===================================================
-  // DASHBOARD STATS
+  // DASHBOARD STATISTICS
   // ===================================================
 
   const stats = [
@@ -835,7 +1146,6 @@ export default function DashboardPage() {
       value: summary?.registeredTeams ?? "—",
       detail: "In the current workspace",
       icon: Users,
-      color: "lime",
     },
     {
       label: "Matches played",
@@ -844,21 +1154,18 @@ export default function DashboardPage() {
         ? `Of ${summary.totalMatches} scheduled`
         : "Waiting for API data",
       icon: CalendarDays,
-      color: "blue",
     },
     {
       label: "Goals scored",
       value: summary?.goalsScored ?? "—",
       detail: "From completed matches",
       icon: Trophy,
-      color: "lime",
     },
     {
       label: "Competitions",
       value: summary?.totalCompetitions ?? "—",
       detail: "Stored in your database",
       icon: ChartNoAxesCombined,
-      color: "blue",
     },
   ];
 
@@ -866,35 +1173,36 @@ export default function DashboardPage() {
     summary && summary.totalMatches > 0
       ? Math.min(
           100,
-          Math.round((summary.matchesPlayed / summary.totalMatches) * 100),
+          Math.round(
+            (summary.matchesPlayed /
+              summary.totalMatches) *
+              100
+          )
         )
       : 0;
 
   const competition = summary?.activeCompetition;
-  const showDashboardSkeleton = loadingSummary && !summary && !dashboardError;
-
-  // ===================================================
-  // LOADING SCREEN
-  // ===================================================
 
   if (checkingSession) {
-    return <DashboardSkeleton section={activeSection} />;
+    return <DashboardSkeleton />;
   }
-
-  // ===================================================
-  // SESSION ERROR
-  // ===================================================
 
   if (!user) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#080a0d] px-5 text-white">
         <div className="max-w-sm text-center">
-          <ShieldCheck size={28} className="mx-auto text-[#b7f56a]" />
+          <ShieldCheck
+            size={30}
+            className="mx-auto text-[#b7f56a]"
+          />
 
-          <h1 className="mt-4 text-xl font-semibold">Session unavailable</h1>
+          <h1 className="mt-4 text-xl font-semibold">
+            Session unavailable
+          </h1>
 
           <p className="mt-2 text-sm text-[#8b98aa]">
-            {dashboardError || "Please sign in to continue."}
+            {dashboardError ||
+              "Please sign in to continue."}
           </p>
 
           <Link
@@ -918,12 +1226,10 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-[#080a0d] text-white">
-      {/* Background glow */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -right-48 -top-48 h-[520px] w-[520px] rounded-full bg-[#b7f56a]/[0.035] blur-[120px]" />
       </div>
 
-      {/* Mobile overlay */}
       {mobileNavOpen && (
         <button
           type="button"
@@ -933,16 +1239,17 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* =============================================
-          SIDEBAR
-      ============================================== */}
+      {/* ============================================= */}
+      {/* SIDEBAR */}
+      {/* ============================================= */}
 
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex w-[264px] flex-col border-r border-white/[0.065] bg-[#0b0e12] transition-transform duration-300 lg:translate-x-0 ${
-          mobileNavOpen ? "translate-x-0" : "-translate-x-full"
+          mobileNavOpen
+            ? "translate-x-0"
+            : "-translate-x-full"
         }`}
       >
-        {/* Logo */}
         <div className="flex h-[78px] shrink-0 items-center justify-between border-b border-white/[0.06] px-6">
           <Link
             href="/dashboard"
@@ -953,12 +1260,17 @@ export default function DashboardPage() {
             className="flex items-center gap-3"
           >
             <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#b7f56a]/30 bg-[#b7f56a]/[0.08] text-[#b7f56a]">
-              <FootballBall className="h-6 w-6" animate={!reducedMotion} />
+              <FootballBall
+                className="h-6 w-6"
+                animate={!reducedMotion}
+              />
             </span>
 
             <span className="text-[17px] font-bold tracking-tight">
               Football
-              <span className="text-[#b7f56a]">Sim</span>
+              <span className="text-[#b7f56a]">
+                Sim
+              </span>
             </span>
           </Link>
 
@@ -972,7 +1284,6 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Sidebar search */}
         <div className="px-4 pb-3 pt-4">
           <button
             type="button"
@@ -981,7 +1292,9 @@ export default function DashboardPage() {
           >
             <Search size={15} />
 
-            <span className="flex-1 text-left">Find a workspace</span>
+            <span className="flex-1 text-left">
+              Find a workspace
+            </span>
 
             <span className="rounded-md border border-white/[0.09] px-1.5 py-1 text-[9px]">
               Ctrl K
@@ -989,7 +1302,6 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Sidebar navigation */}
         <nav className="flex-1 space-y-6 overflow-y-auto px-3 pb-5 pt-3">
           {navigation.map((group) => (
             <div key={group.heading}>
@@ -1000,14 +1312,16 @@ export default function DashboardPage() {
               <div className="space-y-1">
                 {group.items.map((item) => {
                   const Icon = item.icon;
-
-                  const active = activeSection === item.section;
+                  const active =
+                    activeSection === item.section;
 
                   return (
                     <button
                       key={item.section}
                       type="button"
-                      onClick={() => selectSection(item.section)}
+                      onClick={() =>
+                        selectSection(item.section)
+                      }
                       className={`relative flex min-h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-xs font-medium transition ${
                         active
                           ? "bg-[#b7f56a]/[0.085] text-[#c9fb8b]"
@@ -1020,10 +1334,16 @@ export default function DashboardPage() {
 
                       <Icon
                         size={16}
-                        className={active ? "text-[#b7f56a]" : "text-[#758194]"}
+                        className={
+                          active
+                            ? "text-[#b7f56a]"
+                            : "text-[#758194]"
+                        }
                       />
 
-                      <span className="flex-1">{item.label}</span>
+                      <span className="flex-1">
+                        {item.label}
+                      </span>
 
                       {active && (
                         <span className="h-1.5 w-1.5 rounded-full bg-[#b7f56a]" />
@@ -1036,11 +1356,13 @@ export default function DashboardPage() {
           ))}
         </nav>
 
-        {/* Sidebar bottom */}
         <div className="shrink-0 border-t border-white/[0.06] p-3">
           <div className="mb-3 rounded-xl border border-[#b7f56a]/10 bg-[#b7f56a]/[0.035] p-3">
             <div className="mb-2 flex items-center gap-2">
-              <ShieldCheck size={16} className="text-[#b7f56a]" />
+              <ShieldCheck
+                size={16}
+                className="text-[#b7f56a]"
+              />
 
               <span className="text-[11px] font-semibold">
                 Manager workspace
@@ -1048,7 +1370,8 @@ export default function DashboardPage() {
             </div>
 
             <p className="text-[10px] leading-4 text-[#758192]">
-              Manage competitions, clubs and seasons in one place.
+              Manage competitions, clubs and seasons
+              in one place.
             </p>
           </div>
 
@@ -1063,12 +1386,11 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      {/* =============================================
-          MAIN WORKSPACE
-      ============================================== */}
+      {/* ============================================= */}
+      {/* MAIN WORKSPACE */}
+      {/* ============================================= */}
 
       <div className="relative min-h-screen lg:pl-[264px]">
-        {/* Header */}
         <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#080a0d]/90 backdrop-blur-xl">
           <div className="flex h-[78px] items-center justify-between gap-3 px-4 sm:px-7 xl:px-10">
             <div className="flex min-w-0 items-center gap-3">
@@ -1086,10 +1408,14 @@ export default function DashboardPage() {
                   Workspace
                 </span>
 
-                <span className="hidden text-[#414c5b] sm:inline">/</span>
+                <span className="hidden text-[#414c5b] sm:inline">
+                  /
+                </span>
 
                 <span className="truncate font-medium text-[#dfe5ec]">
-                  {activeSectionLabel}
+                  {selectedCompetitionId
+                    ? "Competition Details"
+                    : activeSectionLabel}
                 </span>
               </div>
             </div>
@@ -1099,11 +1425,12 @@ export default function DashboardPage() {
                 <span className="h-2 w-2 rounded-full bg-[#b7f56a]" />
 
                 <span className="text-[10px] text-[#b7d997]">
-                  {loadingSummary ? "Refreshing data" : "Dashboard"}
+                  {loadingSummary
+                    ? "Refreshing data"
+                    : "Dashboard"}
                 </span>
               </div>
 
-              {/* Search */}
               <button
                 type="button"
                 aria-label="Search workspace"
@@ -1113,13 +1440,14 @@ export default function DashboardPage() {
                 <Search size={17} />
               </button>
 
-              {/* Notifications */}
               <div className="relative">
                 <button
                   type="button"
                   aria-label="Notifications"
                   aria-expanded={notificationsOpen}
-                  onClick={() => setNotificationsOpen(!notificationsOpen)}
+                  onClick={() =>
+                    setNotificationsOpen(!notificationsOpen)
+                  }
                   className="rounded-lg p-2 text-[#8b97a8] hover:bg-white/[0.05]"
                 >
                   <Bell size={17} />
@@ -1127,22 +1455,26 @@ export default function DashboardPage() {
 
                 {notificationsOpen && (
                   <div className="absolute right-0 top-12 z-50 w-64 rounded-xl border border-white/[0.09] bg-[#10151b] p-4 shadow-2xl">
-                    <p className="text-xs font-semibold">Notifications</p>
+                    <p className="text-xs font-semibold">
+                      Notifications
+                    </p>
 
                     <p className="mt-2 text-xs leading-5 text-[#8793a4]">
-                      Competition notifications will appear here when connected.
+                      Competition notifications will appear
+                      here when connected.
                     </p>
                   </div>
                 )}
               </div>
 
-              {/* Account menu */}
               <div className="relative">
                 <button
                   type="button"
                   aria-label="Account menu"
                   aria-expanded={accountMenuOpen}
-                  onClick={() => setAccountMenuOpen(!accountMenuOpen)}
+                  onClick={() =>
+                    setAccountMenuOpen(!accountMenuOpen)
+                  }
                   className="flex items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.035] p-1"
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#b7f56a]/20 bg-[#b7f56a]/[0.11] text-[10px] font-bold text-[#c7fa8c]">
@@ -1186,8 +1518,9 @@ export default function DashboardPage() {
                       className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-xs text-red-300 hover:bg-red-400/[0.08] disabled:opacity-50"
                     >
                       <LogOut size={14} />
-
-                      {signingOut ? "Signing out..." : "Sign out"}
+                      {signingOut
+                        ? "Signing out..."
+                        : "Sign out"}
                     </button>
                   </div>
                 )}
@@ -1196,9 +1529,9 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        {/* ===========================================
-            SEARCH DIALOG
-        ============================================ */}
+        {/* =========================================== */}
+        {/* SEARCH DIALOG */}
+        {/* =========================================== */}
 
         {searchOpen && (
           <div
@@ -1209,18 +1542,24 @@ export default function DashboardPage() {
           >
             <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-white/[0.1] bg-[#10151b] shadow-2xl">
               <div className="flex items-center gap-3 border-b border-white/[0.07] px-4">
-                <Search size={18} className="text-[#8490a0]" />
+                <Search
+                  size={18}
+                  className="text-[#8490a0]"
+                />
 
                 <input
                   autoFocus
                   value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
+                  onChange={(event) =>
+                    setSearchQuery(event.target.value)
+                  }
                   placeholder="Find a dashboard section..."
                   className="h-14 min-w-0 flex-1 bg-transparent text-sm outline-none"
                 />
 
                 <button
                   type="button"
+                  aria-label="Close search"
                   onClick={() => {
                     setSearchOpen(false);
                     setSearchQuery("");
@@ -1232,28 +1571,29 @@ export default function DashboardPage() {
               </div>
 
               <div className="max-h-72 overflow-y-auto p-2">
-                {filteredNavigation
-                  .flatMap((group) => group.items)
-                  .map((item) => {
-                    const Icon = item.icon;
+                {filteredNavigation.map((item) => {
+                  const Icon = item.icon;
 
-                    return (
-                      <button
-                        key={item.section}
-                        type="button"
-                        onClick={() => selectSection(item.section)}
-                        className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-xs text-[#b2bdca] hover:bg-white/[0.05]"
-                      >
-                        <Icon size={16} className="text-[#b7f56a]" />
+                  return (
+                    <button
+                      key={item.section}
+                      type="button"
+                      onClick={() =>
+                        selectSection(item.section)
+                      }
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-xs text-[#b2bdca] hover:bg-white/[0.05]"
+                    >
+                      <Icon
+                        size={16}
+                        className="text-[#b7f56a]"
+                      />
 
-                        {item.label}
-                      </button>
-                    );
-                  })}
+                      {item.label}
+                    </button>
+                  );
+                })}
 
-                {filteredNavigation.every(
-                  (group) => group.items.length === 0,
-                ) && (
+                {filteredNavigation.length === 0 && (
                   <p className="p-4 text-xs text-[#8b98aa]">
                     No matching sections found.
                   </p>
@@ -1263,18 +1603,19 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ===========================================
-            CONTENT
-        ============================================ */}
+        {/* =========================================== */}
+        {/* MAIN CONTENT */}
+        {/* =========================================== */}
 
         <div className="mx-auto w-full max-w-[1720px] px-4 pb-10 pt-7 sm:px-7 sm:pt-9 xl:px-10">
-          {/* API error */}
           {dashboardError && (
             <div
               role="alert"
               className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-400/20 bg-red-400/[0.05] p-4"
             >
-              <p className="text-xs text-red-200">{dashboardError}</p>
+              <p className="text-xs text-red-200">
+                {dashboardError}
+              </p>
 
               <button
                 type="button"
@@ -1286,59 +1627,20 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* =========================================
-              OTHER SECTIONS
-          ========================================== */}
-
-          {showDashboardSkeleton ? (
-            <div aria-live="polite" className="space-y-5">
-              <div className="flex items-center gap-3 rounded-xl border border-[#b7f56a]/10 bg-[#b7f56a]/[0.035] p-4 text-xs text-[#b7f56a]">
-                <FootballBall className="h-7 w-7" animate={!reducedMotion} />{" "}
-                Preparing your matchday data...
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {Array.from({ length: 4 }, (_, i) => (
-                  <div key={i} className={`${panel} p-5`}>
-                    <SkeletonLine className="h-9 w-9" />
-                    <SkeletonLine className="mt-5 h-3 w-24" />
-                    <SkeletonLine className="mt-3 h-9 w-20" />
-                  </div>
-                ))}
-              </div>
-              <div className="grid gap-4 2xl:grid-cols-[1.65fr_0.9fr]">
-                <div className={`${panel} h-72 p-6`}>
-                  <SkeletonLine className="h-6 w-40" />
-                  <SkeletonLine className="mt-14 h-10 w-2/3" />
-                  <SkeletonLine className="mt-10 h-3 w-3/4" />
-                </div>
-                <div className={`${panel} h-72 p-6`}>
-                  <SkeletonLine className="h-6 w-40" />
-                  {Array.from({ length: 3 }, (_, i) => (
-                    <SkeletonLine key={i} className="mt-6 h-10 w-full" />
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : activeSection === "competitions" ? (
-            <>
-            {selectedCompetitionId && (
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#b7f56a]/20 bg-[#b7f56a]/[0.05] p-4 text-xs text-[#c9fb8b]">
-                <span>Selected competition: {selectedCompetitionId}. The detailed management view is the next integration step.</span>
-                <button type="button" className="underline" onClick={() => setSelectedCompetitionId(null)}>Dismiss</button>
-              </div>
-            )}
-            <CompetitionsSection
-              onCreate={() => selectSection("create-competition")}
-              onOpen={(competitionId) => {
-                window.history.replaceState(
-                  null,
-                  "",
-                  `${window.location.pathname}?section=competitions&competitionId=${encodeURIComponent(competitionId)}`,
-                );
-                setSelectedCompetitionId(competitionId);
-              }}
-            />
-            </>
+          {activeSection === "competitions" ? (
+            selectedCompetitionId ? (
+              <CompetitionDetails
+                competitionId={selectedCompetitionId}
+                onBack={closeCompetition}
+              />
+            ) : (
+              <CompetitionsSection
+                onCreate={() =>
+                  selectSection("create-competition")
+                }
+                onOpen={openCompetition}
+              />
+            )
           ) : activeSection !== "dashboard" ? (
             <section className="flex min-h-[60vh] flex-col items-center justify-center text-center">
               <FootballBall
@@ -1351,13 +1653,9 @@ export default function DashboardPage() {
               </h1>
 
               <p className="mt-3 max-w-md text-sm leading-6 text-[#8d9aab]">
-                This section will be connected to the corresponding FootballSim
-                API endpoints.
+                This section will be connected to the
+                corresponding FootballSim API endpoints.
               </p>
-
-              <div className="mt-4 rounded-lg border border-white/[0.07] bg-white/[0.025] px-4 py-2 text-[10px] text-[#8b98aa]">
-                Section: {activeSection}
-              </div>
 
               <button
                 type="button"
@@ -1369,30 +1667,40 @@ export default function DashboardPage() {
               </button>
             </section>
           ) : (
-            <>
-              {/* =====================================
-                  GREETING
-              ====================================== */}
+            <div className="space-y-6">
+              {/* GREETING */}
 
               <motion.section
-                initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+                initial={
+                  reducedMotion
+                    ? false
+                    : { opacity: 0, y: 10 }
+                }
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35 }}
-                className="mb-8 flex flex-col justify-between gap-6 2xl:flex-row 2xl:items-end"
+                className="flex flex-col justify-between gap-6 2xl:flex-row 2xl:items-end"
               >
                 <div>
                   <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.17em] text-[#76869c]">
-                    {currentDate ? formatDate(currentDate) : "\u00a0"}
+                    {currentDate
+                      ? formatDate(currentDate)
+                      : "\u00a0"}
                   </p>
 
                   <h1 className="text-[30px] font-semibold tracking-[-0.055em] text-[#f4f6f8] sm:text-[37px]">
-                    {currentDate ? getGreeting(currentDate) : "Welcome"},{" "}
-                    <span className="text-[#b7f56a]">{firstName}</span>
+                    {currentDate
+                      ? getGreeting(currentDate)
+                      : "Welcome"}
+                    ,{" "}
+                    <span className="text-[#b7f56a]">
+                      {firstName}
+                    </span>
                   </h1>
 
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-[#8996a7]">
-                    Your competition overview, matchday activity, and tournament
-                    progress at a glance.
+                    Your competition overview, matchday
+                    activity, and tournament progress
+                    at a glance.
                   </p>
                 </div>
 
@@ -1408,14 +1716,17 @@ export default function DashboardPage() {
                       </p>
 
                       <p className="mt-1 truncate text-xs font-semibold">
-                        {competition?.name || "No competition created"}
+                        {competition?.name ||
+                          "No competition created"}
                       </p>
                     </div>
                   </div>
 
                   <button
                     type="button"
-                    onClick={() => selectSection("create-competition")}
+                    onClick={() =>
+                      selectSection("create-competition")
+                    }
                     className="flex h-[52px] items-center justify-center gap-3 rounded-xl bg-[#b7f56a] px-5 text-xs font-bold text-black transition hover:bg-[#c9ff87]"
                   >
                     <Plus size={16} />
@@ -1425,26 +1736,27 @@ export default function DashboardPage() {
                 </div>
               </motion.section>
 
-              {/* Football identity strip: pitch diagram and moving match ball */}
-              <div className="relative mb-6 overflow-hidden rounded-2xl border border-[#b7f56a]/[0.14] bg-gradient-to-r from-[#122018] via-[#101a16] to-[#101319] px-5 py-5 sm:px-7">
+              {/* FOOTBALL BANNER */}
+
+              <div className="relative overflow-hidden rounded-2xl border border-[#b7f56a]/[0.14] bg-gradient-to-r from-[#122018] via-[#101a16] to-[#101319] px-5 py-5 sm:px-7">
                 <PitchLines className="absolute -right-14 -top-16 h-56 w-[420px] text-[#b7f56a]/[0.09]" />
+
                 <div className="relative z-10 flex items-center justify-between gap-5">
                   <div>
-                    <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.19em] text-[#b7f56a]">
-                      <Radio
-                        size={13}
-                        className={reducedMotion ? "" : "animate-pulse"}
-                      />{" "}
+                    <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.19em] text-[#b7f56a]">
                       The simulation hub
-                    </div>
+                    </p>
+
                     <h2 className="text-lg font-semibold tracking-tight sm:text-xl">
                       Every match tells a story.
                     </h2>
+
                     <p className="mt-1 text-xs leading-5 text-[#92a498]">
-                      Build the fixtures. Run the simulation. Watch your
-                      tournament unfold.
+                      Build the fixtures. Run the simulation.
+                      Watch your tournament unfold.
                     </p>
                   </div>
+
                   <FootballBall
                     className="h-16 w-16 shrink-0 text-[#b7f56a]/75 sm:h-20 sm:w-20"
                     animate={!reducedMotion}
@@ -1452,11 +1764,9 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* =====================================
-                  STATISTICS
-              ====================================== */}
+              {/* STATISTICS */}
 
-              <section className="mb-5">
+              <section>
                 <div className="mb-3 flex items-center justify-between">
                   <p className="text-[9px] font-semibold uppercase tracking-[0.17em] text-[#657287]">
                     Live database snapshot
@@ -1478,393 +1788,296 @@ export default function DashboardPage() {
                     return (
                       <motion.article
                         key={stat.label}
-                        initial={reducedMotion ? false : { opacity: 0, y: 10 }}
-                        animate={{
-                          opacity: 1,
-                          y: 0,
-                        }}
+                        initial={
+                          reducedMotion
+                            ? false
+                            : { opacity: 0, y: 10 }
+                        }
+                        animate={{ opacity: 1, y: 0 }}
                         transition={{
                           duration: 0.3,
                           delay: index * 0.05,
                         }}
-                        className={`${panel} group relative overflow-hidden p-5 transition duration-300 hover:-translate-y-1 hover:border-[#b7f56a]/25 hover:shadow-[0_16px_40px_rgba(0,0,0,0.18)]`}
+                        className={`${panel} group p-5 transition duration-300 hover:-translate-y-1 hover:border-[#b7f56a]/25`}
                       >
-                        <div className="flex items-center justify-between">
-                          <span
-                            className={`flex h-9 w-9 items-center justify-center rounded-xl border ${
-                              stat.color === "lime"
-                                ? "border-[#b7f56a]/15 bg-[#b7f56a]/10 text-[#b7f56a]"
-                                : "border-blue-400/15 bg-blue-400/10 text-blue-300"
-                            }`}
-                          >
-                            <Icon size={17} />
-                          </span>
+                        <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#b7f56a]/15 bg-[#b7f56a]/[0.06] text-[#b7f56a]">
+                          <Icon size={19} />
+                        </span>
 
-                          <FootballBall
-                            className="h-5 w-5 text-[#b7f56a]/25 transition-transform duration-500 group-hover:rotate-45"
-                            animate={false}
-                          />
-                        </div>
-
-                        <p className={`mt-5 text-xs ${muted}`}>{stat.label}</p>
-
-                        <p className="mt-2 text-[31px] font-semibold tracking-tight">
-                          {loadingSummary ? "…" : stat.value}
+                        <p className="mt-5 text-xs text-[#8b98aa]">
+                          {stat.label}
                         </p>
 
-                        <p className="mt-1 text-[10px] text-[#718094]">
+                        <p className="mt-2 text-3xl font-semibold tracking-tight">
+                          {stat.value}
+                        </p>
+
+                        <p className="mt-2 text-[10px] text-[#6d7c8e]">
                           {stat.detail}
                         </p>
-
-                        {stat.label === "Matches played" && (
-                          <div className="mt-4 h-[3px] overflow-hidden rounded-full bg-white/[0.07]">
-                            <div
-                              className="h-full rounded-full bg-blue-400 transition-all"
-                              style={{
-                                width: `${matchProgress}%`,
-                              }}
-                            />
-                          </div>
-                        )}
                       </motion.article>
                     );
                   })}
                 </div>
               </section>
 
-              {/* =====================================
-                  MAIN DASHBOARD GRID
-              ====================================== */}
+              {/* COMPETITION OVERVIEW */}
 
-              <div className="grid items-start gap-4 2xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.9fr)]">
-                <div className="space-y-4">
-                  {/* Competition overview */}
-                  <section className="relative overflow-hidden rounded-2xl border border-[#b7f56a]/15 bg-gradient-to-br from-[#121d18] via-[#101713] to-[#101319] p-5 sm:p-7">
-                    <PitchLines className="absolute -right-32 top-1/2 h-64 w-[480px] -translate-y-1/2 text-[#b7f56a]/[0.07]" />
-                    <FootballBall
-                      className="absolute right-8 top-20 hidden h-24 w-24 text-[#b7f56a]/[0.22] md:block"
-                      animate={!reducedMotion}
-                    />
-                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-3">
-                      <span className="inline-flex items-center gap-2 rounded-lg border border-[#b7f56a]/15 bg-[#b7f56a]/[0.065] px-3 py-2 text-[10px] text-[#bbef86]">
-                        <Trophy size={14} />
-                        Competition overview
-                      </span>
-
-                      <span className="rounded-full border border-[#b7f56a]/10 px-3 py-1.5 text-[9px] uppercase tracking-wider text-[#b7f56a]">
-                        {competition ? "Configured" : "Awaiting setup"}
-                      </span>
-                    </div>
-
-                    <div className="relative z-10 mt-8">
-                      <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#829a78]">
-                        Featured competition
-                      </p>
-
-                      <h2 className="mt-3 text-[26px] font-semibold tracking-tight sm:text-[34px]">
-                        {competition?.name || "Your next competition"}
-                      </h2>
-
-                      <p className="mt-3 text-xs leading-6 text-[#97a79a]">
-                        {competition?.season || "No season specified"}
-                        {" · "}
-                        {summary?.registeredTeams ?? 0} registered teams
-                        {" · "}
-                        {summary?.totalMatches ?? 0} fixtures
-                      </p>
-                    </div>
-
-                    <div className="relative z-10 mt-9 flex flex-col justify-between gap-5 border-t border-white/[0.075] pt-5 sm:flex-row sm:items-end">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[9px] uppercase tracking-wider text-[#718276]">
-                          Matchday progress
-                        </p>
-
-                        <div className="mt-3 flex items-center gap-3">
-                          <div className="h-1.5 max-w-xs flex-1 overflow-hidden rounded-full bg-white/[0.09]">
-                            <div
-                              className="h-full rounded-full bg-[#b7f56a]"
-                              style={{
-                                width: `${matchProgress}%`,
-                              }}
-                            />
-                          </div>
-
-                          <span className="text-xs font-semibold">
-                            {matchProgress}%
-                          </span>
-                        </div>
-
-                        <p className="mt-2 text-[10px] text-[#829286]">
-                          {summary?.matchesPlayed ?? 0} played out of{" "}
-                          {summary?.totalMatches ?? 0} matches
-                        </p>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => selectSection("competitions")}
-                        className="flex items-center gap-2 text-xs font-semibold text-[#c7fb8b]"
-                      >
-                        Open competition
-                        <ArrowUpRight size={15} />
-                      </button>
-                    </div>
-                  </section>
-
-                  {/* Matchday overview */}
-                  <section className={`${panel} p-5 sm:p-7`}>
-                    <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="grid gap-4 2xl:grid-cols-[1.65fr_0.9fr]">
+                <div className={`${panel} overflow-hidden`}>
+                  <div className="border-b border-white/[0.06] p-6">
+                    <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-[9px] font-semibold uppercase tracking-wider text-[#74869f]">
-                          Matchday control center
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#b7f56a]">
+                          Competition overview
                         </p>
 
-                        <h2 className="mt-2 text-lg font-semibold">
-                          Matchday overview
-                        </h2>
-
-                        <p className={`mt-1 text-xs ${muted}`}>
-                          Real matchday statistics from your database.
-                        </p>
-                      </div>
-
-                      <span className="rounded-lg border border-[#b7f56a]/15 bg-[#b7f56a]/[0.06] px-3 py-2 text-[9px] text-[#b7f56a]">
-                        {summary?.currentMatchday
-                          ? `MATCHDAY ${summary.currentMatchday}`
-                          : "NOT STARTED"}
-                      </span>
-                    </div>
-
-                    <div className="mt-7 grid gap-5 sm:grid-cols-[90px_minmax(0,1fr)] sm:items-center">
-                      <div className="border-b border-white/[0.07] pb-4 sm:border-b-0 sm:border-r sm:pb-0">
-                        <span className="flex items-center gap-3 text-[38px] font-semibold tracking-tight">
-                          <CircleDot size={25} className="text-[#b7f56a]/65" />
-                          {String(summary?.currentMatchday ?? 0).padStart(
-                            2,
-                            "0",
-                          )}
-                        </span>
-
-                        <p className="mt-2 text-[9px] uppercase tracking-wider text-[#748196]">
-                          Latest played
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-3">
-                        {[
-                          {
-                            label: "Fixtures",
-                            value: summary?.totalMatches ?? "—",
-                          },
-                          {
-                            label: "Played",
-                            value: summary?.matchesPlayed ?? "—",
-                          },
-                          {
-                            label: "Remaining",
-                            value: summary
-                              ? Math.max(
-                                  0,
-                                  summary.totalMatches - summary.matchesPlayed,
-                                )
-                              : "—",
-                          },
-                        ].map((item) => (
-                          <div key={item.label}>
-                            <p className="text-[9px] uppercase text-[#758297]">
-                              {item.label}
-                            </p>
-
-                            <p className="mt-2 text-lg font-semibold">
-                              {item.value}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </section>
-                </div>
-
-                <div className="space-y-4">
-                  {/* Upcoming fixtures */}
-                  <section className={`${panel} p-5 sm:p-6`}>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-[9px] font-semibold uppercase tracking-wider text-[#73839a]">
-                          Up next
-                        </p>
-
-                        <h2 className="mt-2 text-base font-semibold">
-                          Upcoming fixtures
+                        <h2 className="mt-2 text-xl font-semibold">
+                          {competition?.name ||
+                            "Your tournament workspace"}
                         </h2>
                       </div>
 
-                      <CalendarClock size={19} className="text-[#8391a3]" />
+                      <Trophy
+                        size={28}
+                        className="text-[#b7f56a]"
+                      />
                     </div>
 
-                    {loadingSummary ? (
-                      <p className={`py-12 text-xs ${muted}`}>
-                        Loading fixtures...
-                      </p>
-                    ) : summary?.upcomingFixtures.length ? (
-                      <div className="mt-4">
-                        {summary.upcomingFixtures.map((fixture) => (
-                          <div
-                            key={fixture.id}
-                            className="border-b border-white/[0.065] py-4 last:border-0"
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="min-w-0 flex-1 truncate text-xs font-semibold">
-                                {fixture.homeTeam}
-                              </p>
+                    <p className="mt-3 text-xs text-[#8b98aa]">
+                      {competition?.season ||
+                        "Season not specified"}
+                    </p>
+                  </div>
 
-                              <span className="text-[9px] text-[#586678]">
-                                VS
-                              </span>
+                  <div className="space-y-6 p-6">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-[#8b98aa]">
+                        Match completion
+                      </span>
 
-                              <p className="min-w-0 flex-1 truncate text-right text-xs font-semibold">
-                                {fixture.awayTeam}
-                              </p>
-                            </div>
-
-                            <div className="mt-3 flex justify-between text-[10px] text-[#77869a]">
-                              <span>Matchday {fixture.matchDay}</span>
-
-                              <span>
-                                {fixture.isPlayed ? "Played" : "Scheduled"}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="py-10 text-center">
-                        <CalendarDays
-                          size={24}
-                          className="mx-auto text-[#7b899b]"
-                        />
-
-                        <p className="mt-4 text-xs font-medium">
-                          No upcoming fixtures
-                        </p>
-
-                        <p className="mt-2 text-[10px] leading-5 text-[#7b899b]">
-                          Create fixtures for your competition to see them here.
-                        </p>
-                      </div>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => selectSection("fixtures")}
-                      className="mt-3 flex w-full items-center justify-end gap-2 text-[10px] font-semibold text-[#b7f56a]"
-                    >
-                      View fixtures
-                      <ArrowUpRight size={14} />
-                    </button>
-                  </section>
-
-                  {/* Competition journey */}
-                  <section className={`${panel} p-5 sm:p-6`}>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-[9px] font-semibold uppercase tracking-wider text-[#74849a]">
-                          Tournament setup
-                        </p>
-
-                        <h2 className="mt-2 text-base font-semibold">
-                          Competition journey
-                        </h2>
-                      </div>
-
-                      <Zap size={19} className="text-[#b7f56a]" />
+                      <span className="font-semibold text-[#b7f56a]">
+                        {matchProgress}%
+                      </span>
                     </div>
 
-                    <div className="mt-6 space-y-5">
+                    <div className="h-2 overflow-hidden rounded-full bg-white/[0.07]">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{
+                          width: `${matchProgress}%`,
+                        }}
+                        transition={{ duration: 0.7 }}
+                        className="h-full rounded-full bg-[#b7f56a]"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                       {[
                         {
-                          title: "Create a competition",
-                          detail: competition
-                            ? "A competition exists in your database."
-                            : "Create your first competition.",
-                          done: Boolean(competition),
+                          label: "Total matches",
+                          value:
+                            summary?.totalMatches ?? "—",
                         },
                         {
-                          title: "Register teams",
-                          detail: `${
-                            summary?.registeredTeams ?? 0
-                          } teams registered.`,
-                          done: Boolean(summary?.registeredTeams),
+                          label: "Matches played",
+                          value:
+                            summary?.matchesPlayed ?? "—",
                         },
                         {
-                          title: "Generate fixtures",
-                          detail: `${
-                            summary?.totalMatches ?? 0
-                          } matches scheduled.`,
-                          done: Boolean(summary?.totalMatches),
+                          label: "Matchday",
+                          value:
+                            summary?.currentMatchday ?? "—",
                         },
-                        {
-                          title: "Simulate matches",
-                          detail: `${
-                            summary?.matchesPlayed ?? 0
-                          } matches completed.`,
-                          done: Boolean(summary?.matchesPlayed),
-                        },
-                      ].map((step) => (
-                        <div key={step.title} className="flex gap-3">
-                          <span
-                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${
-                              step.done
-                                ? "border-[#b7f56a]/15 bg-[#b7f56a]/10 text-[#b7f56a]"
-                                : "border-white/[0.09] bg-white/[0.025] text-[#8d9aab]"
-                            }`}
-                          >
-                            {step.done ? (
-                              <Check size={16} />
-                            ) : (
-                              <Clock3 size={16} />
-                            )}
-                          </span>
+                      ].map((item) => (
+                        <div
+                          key={item.label}
+                          className="rounded-xl border border-white/[0.06] bg-[#0b0e12] p-4"
+                        >
+                          <p className="text-xl font-semibold">
+                            {item.value}
+                          </p>
 
-                          <div>
-                            <p className="text-xs font-semibold">
-                              {step.title}
-                            </p>
-
-                            <p className="mt-1 text-[10px] leading-4 text-[#7b889a]">
-                              {step.detail}
-                            </p>
-                          </div>
+                          <p className="mt-2 text-[10px] text-[#8794a5]">
+                            {item.label}
+                          </p>
                         </div>
                       ))}
                     </div>
 
                     <button
                       type="button"
-                      onClick={() => selectSection("competitions")}
-                      className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-[#b7f56a]/15 bg-[#b7f56a]/[0.045] py-3 text-xs font-semibold text-[#c0f58c]"
+                      onClick={() => {
+                        if (competition?.id) {
+                          openCompetition(competition.id);
+                        } else {
+                          selectSection("competitions");
+                        }
+                      }}
+                      className="flex w-full items-center justify-between rounded-xl border border-[#b7f56a]/20 bg-[#b7f56a]/[0.06] px-4 py-3 text-xs font-semibold text-[#b7f56a] hover:bg-[#b7f56a]/[0.1]"
                     >
-                      View competition
-                      <ArrowRight size={14} />
+                      Manage competitions
+                      <ArrowRight size={16} />
                     </button>
-                  </section>
+                  </div>
+                </div>
+
+                <div className={`${panel} p-6`}>
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold">
+                      Upcoming fixtures
+                    </h2>
+
+                    <CalendarDays
+                      size={19}
+                      className="text-[#b7f56a]"
+                    />
+                  </div>
+
+                  <p className="mt-2 text-xs text-[#8b98aa]">
+                    Next matches in your workspace.
+                  </p>
+
+                  <div className="mt-5 space-y-3">
+                    {summary?.upcomingFixtures?.length ? (
+                      summary.upcomingFixtures
+                        .slice(0, 4)
+                        .map((fixture) => (
+                          <div
+                            key={fixture.id}
+                            className="rounded-xl border border-white/[0.06] bg-[#0b0e12] p-4"
+                          >
+                            <div className="mb-3 flex items-center justify-between">
+                              <span className="text-[10px] text-[#7d8a9b]">
+                                Matchday{" "}
+                                {fixture.matchDay}
+                              </span>
+
+                              <span className="text-[10px] text-[#b7f56a]">
+                                Scheduled
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="min-w-0 flex-1 truncate text-xs font-medium">
+                                {fixture.homeTeam}
+                              </span>
+
+                              <span className="text-[10px] text-[#7d8a9b]">
+                                VS
+                              </span>
+
+                              <span className="min-w-0 flex-1 truncate text-right text-xs font-medium">
+                                {fixture.awayTeam}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-white/[0.08] px-4 py-10 text-center">
+                        <CalendarDays
+                          size={25}
+                          className="mx-auto text-[#b7f56a]/70"
+                        />
+
+                        <p className="mt-3 text-xs text-[#8b98aa]">
+                          No upcoming fixtures available.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => selectSection("fixtures")}
+                    className="mt-5 flex w-full items-center justify-between rounded-xl border border-white/[0.08] px-4 py-3 text-xs text-[#b7f56a] hover:bg-white/[0.03]"
+                  >
+                    View all fixtures
+                    <ArrowRight size={15} />
+                  </button>
                 </div>
               </div>
-            </>
+
+              {/* QUICK ACTIONS */}
+
+              <section className={`${panel} p-6`}>
+                <div className="mb-5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#b7f56a]">
+                    Competition management
+                  </p>
+
+                  <h2 className="mt-2 text-xl font-semibold">
+                    Your next move
+                  </h2>
+
+                  <p className="mt-2 text-xs text-[#8b98aa]">
+                    Navigate to the tools that power your
+                    football competition.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  {[
+                    {
+                      label: "Competitions",
+                      detail: "Manage tournaments",
+                      section: "competitions",
+                      icon: Trophy,
+                    },
+                    {
+                      label: "Teams",
+                      detail: "Manage registered clubs",
+                      section: "teams",
+                      icon: Users,
+                    },
+                    {
+                      label: "League phase",
+                      detail: "Follow matchdays",
+                      section: "league-phase",
+                      icon: Activity,
+                    },
+                    {
+                      label: "Knockout stage",
+                      detail: "Track elimination rounds",
+                      section: "knockout-stage",
+                      icon: ArrowRight,
+                    },
+                  ].map((action) => {
+                    const Icon = action.icon;
+
+                    return (
+                      <button
+                        key={action.section}
+                        type="button"
+                        onClick={() =>
+                          selectSection(action.section)
+                        }
+                        className="group rounded-xl border border-white/[0.07] bg-[#0b0e12] p-4 text-left transition hover:border-[#b7f56a]/25 hover:bg-[#b7f56a]/[0.035]"
+                      >
+                        <Icon
+                          size={20}
+                          className="text-[#b7f56a]"
+                        />
+
+                        <p className="mt-4 text-sm font-semibold">
+                          {action.label}
+                        </p>
+
+                        <p className="mt-1 text-[10px] text-[#7c8999]">
+                          {action.detail}
+                        </p>
+
+                        <ArrowUpRight
+                          size={15}
+                          className="mt-4 text-[#7c8999] transition group-hover:text-[#b7f56a]"
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            </div>
           )}
-
-          {/* =========================================
-              FOOTER
-          ========================================== */}
-
-          <footer className="mt-10 flex flex-col gap-2 border-t border-white/[0.06] pt-5 text-[10px] text-[#647184] sm:flex-row sm:justify-between">
-            <p>FootballSim / Football management workspace</p>
-
-            <p>
-              Signed in as <span className="text-[#9ba7b6]">{user.email}</span>
-            </p>
-          </footer>
         </div>
       </div>
     </main>
