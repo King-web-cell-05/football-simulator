@@ -18,17 +18,19 @@ import {
 } from "lucide-react";
 
 type LoginResponse = {
-  accessToken?: string;
-  tokenType?: string;
-  expiresAtUtc?: string;
   message?: string;
   title?: string;
+  requiresEmailVerification?: boolean;
   user?: {
     id: string;
     fullName: string;
     email: string;
+    isEmailVerified?: boolean;
   };
 };
+
+const inputClass =
+  "h-12 w-full rounded-xl border border-white/[0.1] bg-[#080c11] pl-11 text-sm text-white outline-none transition placeholder:text-[#586474] focus:border-[#b7f56a]/60 focus:ring-2 focus:ring-[#b7f56a]/10";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -37,38 +39,37 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [needsVerification, setNeedsVerification] = useState(false);
+
+  const normalizedEmail = email.trim().toLowerCase();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError("");
 
-    const normalizedEmail = email.trim();
+    if (loading) return;
+
+    setError("");
+    setNeedsVerification(false);
 
     if (!normalizedEmail || !password) {
       setError("Please enter your email and password.");
       return;
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
-
-    if (!apiUrl) {
-      setError(
-        "The API address is not configured. Please check your .env.local file.",
-      );
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const response = await fetch(`${apiUrl}/api/Auth/login`, {
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
+        credentials: "same-origin",
+        cache: "no-store",
         body: JSON.stringify({
           email: normalizedEmail,
           password,
@@ -80,41 +81,53 @@ export default function LoginPage() {
         | null;
 
       if (!response.ok) {
+        if (
+          response.status === 403 &&
+          result?.requiresEmailVerification
+        ) {
+          setNeedsVerification(true);
+          setError(
+            result.message ??
+              "Please verify your email address before signing in.",
+          );
+          return;
+        }
+
         if (response.status === 401) {
           setError("Invalid email or password. Please try again.");
-        } else {
-          setError(
-            result?.message ??
-              result?.title ??
-              "Unable to sign in. Please try again.",
-          );
+          return;
         }
+
+        if (response.status === 429) {
+          setError(
+            "Too many login attempts. Please wait a moment and try again.",
+          );
+          return;
+        }
+
+        setError(
+          result?.message ??
+            result?.title ??
+            "Unable to sign in. Please try again.",
+        );
 
         return;
       }
 
-      if (!result?.accessToken || !result.user?.id) {
+      if (!result?.user?.id) {
         setError(
           "The server returned an incomplete login response. Please try again.",
         );
         return;
       }
 
-      // Store the access token for this browser session.
-      sessionStorage.setItem(
-        "footballsim_access_token",
-        result.accessToken,
-      );
-
-      sessionStorage.setItem(
-        "footballsim_user",
-        JSON.stringify(result.user),
-      );
-
+      // JWT is stored in an HttpOnly cookie by
+      // the Next.js API route, not browser storage.
       router.replace("/dashboard");
+      router.refresh();
     } catch {
       setError(
-        "Unable to connect to FootballSim. Check that the API is running and try again.",
+        "Unable to connect to FootballSim. Please check your connection and try again.",
       );
     } finally {
       setLoading(false);
@@ -122,7 +135,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#070a0e] px-5 py-10 text-white selection:bg-[#b7f56a] selection:text-[#070a0e] sm:px-8">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#070a0e] px-5 py-16 text-white selection:bg-[#b7f56a] selection:text-[#070a0e] sm:px-8">
       {/* Background */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_15%_10%,rgba(183,245,106,0.09),transparent_40%),radial-gradient(ellipse_at_90%_90%,rgba(65,110,80,0.08),transparent_35%)]" />
 
@@ -131,7 +144,7 @@ export default function LoginPage() {
       {/* Back link */}
       <Link
         href="/"
-        className="absolute left-5 top-5 inline-flex items-center gap-2 text-xs font-medium text-[#9ba6b5] transition hover:text-white sm:left-8 sm:top-8"
+        className="absolute left-5 top-5 z-20 inline-flex items-center gap-2 text-xs font-medium text-[#9ba6b5] transition hover:text-white sm:left-8 sm:top-8"
       >
         <ArrowLeft size={15} />
         Back to home
@@ -146,7 +159,7 @@ export default function LoginPage() {
           transition={{ duration: 0.5 }}
           className="relative hidden flex-col justify-between overflow-hidden border-r border-white/[0.07] bg-[#0d1319] p-9 lg:flex xl:p-12"
         >
-          <div className="absolute -right-20 top-20 h-64 w-64 rounded-full bg-[#b7f56a]/[0.06] blur-[80px]" />
+          <div className="pointer-events-none absolute -right-20 top-20 h-64 w-64 rounded-full bg-[#b7f56a]/[0.06] blur-[80px]" />
 
           <Link href="/" className="relative flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#b7f56a]/25 bg-[#b7f56a]/10 text-[#b7f56a]">
@@ -173,8 +186,8 @@ export default function LoginPage() {
             </h1>
 
             <p className="mt-6 max-w-sm text-sm leading-7 text-[#98a4b3]">
-              Sign in to manage your competitions, simulate matches, and follow
-              your football world.
+              Sign in to manage your competitions, simulate matches, and
+              follow your football world.
             </p>
 
             <div className="mt-9 space-y-4">
@@ -188,7 +201,9 @@ export default function LoginPage() {
                     <ShieldCheck size={12} />
                   </span>
 
-                  <span className="text-xs text-[#c1cad5]">{item}</span>
+                  <span className="text-xs text-[#c1cad5]">
+                    {item}
+                  </span>
                 </div>
               ))}
             </div>
@@ -247,7 +262,7 @@ export default function LoginPage() {
               <div className="relative">
                 <Mail
                   size={17}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-[#738092]"
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#738092]"
                 />
 
                 <input
@@ -257,9 +272,13 @@ export default function LoginPage() {
                   autoComplete="email"
                   placeholder="you@example.com"
                   value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    setNeedsVerification(false);
+                  }}
                   required
-                  className="h-12 w-full rounded-xl border border-white/[0.1] bg-[#080c11] pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-[#586474] focus:border-[#b7f56a]/60 focus:ring-2 focus:ring-[#b7f56a]/10"
+                  disabled={loading}
+                  className={`${inputClass} pr-4`}
                 />
               </div>
             </div>
@@ -285,7 +304,7 @@ export default function LoginPage() {
               <div className="relative">
                 <LockKeyhole
                   size={17}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-[#738092]"
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#738092]"
                 />
 
                 <input
@@ -297,30 +316,47 @@ export default function LoginPage() {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   required
-                  className="h-12 w-full rounded-xl border border-white/[0.1] bg-[#080c11] pl-11 pr-12 text-sm text-white outline-none transition placeholder:text-[#586474] focus:border-[#b7f56a]/60 focus:ring-2 focus:ring-[#b7f56a]/10"
+                  disabled={loading}
+                  className={`${inputClass} pr-12`}
                 />
 
                 <button
                   type="button"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={
+                    showPassword ? "Hide password" : "Show password"
+                  }
                   aria-pressed={showPassword}
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => setShowPassword((prev) => !prev)}
                   className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#8490a0] transition hover:bg-white/[0.06] hover:text-white"
                 >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showPassword ? (
+                    <EyeOff size={16} />
+                  ) : (
+                    <Eye size={16} />
+                  )}
                 </button>
               </div>
             </div>
 
             {/* Error feedback */}
             {error && (
-              <p
+              <div
                 role="alert"
                 aria-live="polite"
                 className="rounded-xl border border-red-400/20 bg-red-400/[0.06] px-4 py-3 text-xs leading-5 text-red-300"
               >
-                {error}
-              </p>
+                <p>{error}</p>
+
+                {needsVerification && (
+                  <Link
+                    href={`/verify-email?email=${encodeURIComponent(normalizedEmail)}`}
+                    className="mt-3 inline-flex items-center gap-2 font-semibold text-[#b7f56a] transition hover:text-[#d2ff9e]"
+                  >
+                    Verify your email
+                    <ArrowRight size={14} />
+                  </Link>
+                )}
+              </div>
             )}
 
             {/* Submit */}

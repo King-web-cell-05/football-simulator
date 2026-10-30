@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowLeft,
@@ -21,44 +22,58 @@ import {
 const inputClass =
   "h-[clamp(2.5rem,5.6dvh,3rem)] w-full rounded-xl border border-white/[0.1] bg-[#080c11] pl-11 text-sm text-white outline-none transition placeholder:text-[#586474] focus:border-[#b7f56a]/60 focus:ring-2 focus:ring-[#b7f56a]/10";
 
-const labelClass = "mb-1.5 block text-xs font-semibold text-[#d4dbe4]";
+const labelClass =
+  "mb-1.5 block text-xs font-semibold text-[#d4dbe4]";
 
 const buttonHeight = "h-[clamp(2.5rem,5.6dvh,3rem)]";
 
 type RegisterResponse = {
   message?: string;
   title?: string;
+  requiresEmailVerification?: boolean;
   errors?: Record<string, string[]>;
   user?: {
     id: string;
     fullName: string;
     email: string;
+    isEmailVerified?: boolean;
   };
 };
 
 export default function SignupPage() {
+  const router = useRouter();
   const reducedMotion = useReducedMotion();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] =
+    useState(false);
+
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (loading) return;
+
     setError("");
 
-    if (name.trim().length < 2) {
+    const fullName = name.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (fullName.length < 2) {
       setError("Please enter your full name.");
       return;
     }
 
-    if (!email.trim()) {
+    if (!normalizedEmail) {
       setError("Please enter your email address.");
       return;
     }
@@ -78,27 +93,20 @@ export default function SignupPage() {
       return;
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
-
-    if (!apiUrl) {
-      setError(
-        "The API address is not configured. Please check your .env.local file.",
-      );
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const response = await fetch(`${apiUrl}/api/Auth/register`, {
+      const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
+        credentials: "same-origin",
+        cache: "no-store",
         body: JSON.stringify({
-          fullName: name.trim(),
-          email: email.trim(),
+          fullName,
+          email: normalizedEmail,
           password,
         }),
       });
@@ -117,14 +125,39 @@ export default function SignupPage() {
             result?.message ??
               "An account with this email already exists. Please sign in instead.",
           );
-        } else {
+          return;
+        }
+
+        if (response.status === 429) {
+          setError(
+            "Too many registration attempts. Please wait a few minutes and try again.",
+          );
+          return;
+        }
+
+        if (response.status === 503) {
+          // The backend may have created the account
+          // even when the email provider failed.
+          if (result?.requiresEmailVerification) {
+            router.push(
+              `/verify-email?email=${encodeURIComponent(normalizedEmail)}`,
+            );
+            return;
+          }
+
           setError(
             result?.message ??
-              validationError ??
-              result?.title ??
-              "Unable to create your account. Please check your details and try again.",
+              "Registration service is temporarily unavailable.",
           );
+          return;
         }
+
+        setError(
+          result?.message ??
+            validationError ??
+            result?.title ??
+            "Unable to create your account. Please check your details and try again.",
+        );
 
         return;
       }
@@ -136,11 +169,14 @@ export default function SignupPage() {
         return;
       }
 
-      // Registration succeeded. Redirect to the sign-in page.
-      window.location.assign("/login");
+      // Registration succeeded.
+      // Email verification is required before login.
+      router.push(
+        `/verify-email?email=${encodeURIComponent(normalizedEmail)}`,
+      );
     } catch {
       setError(
-        "Unable to connect to FootballSim. Please check that the API is running and try again.",
+        "Unable to connect to FootballSim. Please check your connection and try again.",
       );
     } finally {
       setLoading(false);
@@ -148,7 +184,7 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="relative isolate flex h-dvh w-full items-center justify-center overflow-hidden bg-[#070a0e] px-3 pb-3 pt-12 text-white selection:bg-[#b7f56a] selection:text-[#070a0e] sm:px-6 sm:pb-5 sm:pt-14 lg:px-8">
+    <main className="relative isolate flex min-h-dvh w-full items-center justify-center overflow-hidden bg-[#070a0e] px-3 pb-5 pt-16 text-white selection:bg-[#b7f56a] selection:text-[#070a0e] sm:px-6 lg:px-8">
       {/* Background */}
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_85%_10%,rgba(183,245,106,0.08),transparent_40%),radial-gradient(ellipse_at_10%_90%,rgba(65,110,80,0.08),transparent_35%)]" />
 
@@ -157,24 +193,27 @@ export default function SignupPage() {
       {/* Back link */}
       <Link
         href="/"
-        className="absolute left-5 top-4 z-30 inline-flex items-center gap-2 text-xs font-medium text-[#9ba6b5] transition hover:text-white sm:left-8 sm:top-5"
+        className="absolute left-5 top-5 z-30 inline-flex items-center gap-2 text-xs font-medium text-[#9ba6b5] transition hover:text-white sm:left-8 sm:top-6"
       >
         <ArrowLeft size={15} />
         Back to home
       </Link>
 
       {/* Main card */}
-      <div className="grid h-full max-h-[800px] w-full max-w-6xl grid-cols-1 overflow-hidden rounded-3xl border border-white/[0.09] bg-[#0b1016]/95 shadow-[0_30px_100px_rgba(0,0,0,0.45)] lg:grid-cols-[0.85fr_1.15fr]">
+      <div className="relative grid w-full max-w-6xl grid-cols-1 overflow-hidden rounded-3xl border border-white/[0.09] bg-[#0b1016]/95 shadow-[0_30px_100px_rgba(0,0,0,0.45)] lg:grid-cols-[0.85fr_1.15fr]">
         {/* Desktop information panel */}
         <motion.aside
           initial={reducedMotion ? false : { opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
-          className="relative hidden min-h-0 flex-col justify-between gap-6 overflow-hidden border-r border-white/[0.07] bg-[#0d1319] p-10 lg:flex xl:p-12"
+          className="relative hidden flex-col justify-between gap-6 overflow-hidden border-r border-white/[0.07] bg-[#0d1319] p-10 lg:flex xl:p-12"
         >
           <div className="pointer-events-none absolute -left-20 bottom-10 h-64 w-64 rounded-full bg-[#b7f56a]/[0.06] blur-[80px]" />
 
-          <Link href="/" className="relative flex shrink-0 items-center gap-3">
+          <Link
+            href="/"
+            className="relative flex shrink-0 items-center gap-3"
+          >
             <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#b7f56a]/25 bg-[#b7f56a]/10 text-[#b7f56a]">
               <Goal size={23} />
             </span>
@@ -184,7 +223,7 @@ export default function SignupPage() {
             </span>
           </Link>
 
-          <div className="relative">
+          <div className="relative py-10">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#b7f56a]/15 bg-[#b7f56a]/[0.06] px-3.5 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#b7f56a]">
               <Trophy size={13} />
               Start your next season
@@ -198,12 +237,13 @@ export default function SignupPage() {
               <span className="text-[#b7f56a]">Your story.</span>
             </h1>
 
-            <p className="mt-5 hidden max-w-sm text-sm leading-7 text-[#98a4b3] [@media(min-height:700px)]:block">
-              Create your account and bring your football competitions to life
-              with fixtures, match simulation, and league standings.
+            <p className="mt-5 max-w-sm text-sm leading-7 text-[#98a4b3]">
+              Create your account and bring your football competitions
+              to life with fixtures, match simulation, and league
+              standings.
             </p>
 
-            <div className="mt-8 hidden rounded-2xl border border-white/[0.08] bg-white/[0.025] p-6 [@media(min-height:820px)]:block">
+            <div className="mt-8 rounded-2xl border border-white/[0.08] bg-white/[0.025] p-6">
               <div className="flex items-center gap-3.5">
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#b7f56a]/10 text-[#b7f56a]">
                   <ShieldCheck size={20} />
@@ -213,6 +253,7 @@ export default function SignupPage() {
                   <p className="text-sm font-semibold text-white">
                     Built around your game
                   </p>
+
                   <p className="mt-1 text-xs text-[#8e9aaa]">
                     Your football workspace starts here.
                   </p>
@@ -226,8 +267,14 @@ export default function SignupPage() {
                   "Follow your standings",
                 ].map((item) => (
                   <div key={item} className="flex items-center gap-3">
-                    <Check size={14} className="text-[#b7f56a]" />
-                    <span className="text-xs text-[#aeb8c7]">{item}</span>
+                    <Check
+                      size={14}
+                      className="text-[#b7f56a]"
+                    />
+
+                    <span className="text-xs text-[#aeb8c7]">
+                      {item}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -244,12 +291,12 @@ export default function SignupPage() {
           initial={reducedMotion ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="flex min-h-0 flex-col justify-center overflow-hidden px-5 py-4 sm:px-10 lg:px-12 xl:px-14"
+          className="flex min-w-0 flex-col justify-center px-5 py-7 sm:px-10 sm:py-10 lg:px-12 xl:px-14"
         >
           {/* Mobile brand */}
           <Link
             href="/"
-            className="mb-4 hidden shrink-0 items-center gap-2.5 lg:hidden [@media(min-height:720px)]:flex"
+            className="mb-6 inline-flex items-center gap-2.5 lg:hidden"
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#b7f56a]/25 bg-[#b7f56a]/10 text-[#b7f56a]">
               <Goal size={21} />
@@ -260,7 +307,7 @@ export default function SignupPage() {
             </span>
           </Link>
 
-          <div className="mb-[clamp(0.75rem,3dvh,2rem)] shrink-0">
+          <div className="mb-6">
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#b7f56a]">
               Create your account
             </p>
@@ -269,14 +316,15 @@ export default function SignupPage() {
               Join FootballSim
             </h2>
 
-            <p className="mt-2 hidden text-sm leading-6 text-[#909cac] [@media(min-height:680px)]:block">
-              Set up your account and start building your football universe.
+            <p className="mt-2 text-sm leading-6 text-[#909cac]">
+              Set up your account and start building your football
+              universe.
             </p>
           </div>
 
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col gap-[clamp(0.5rem,1.9dvh,1.25rem)]"
+            className="flex flex-col gap-4"
           >
             {/* Full name */}
             <div>
@@ -300,6 +348,8 @@ export default function SignupPage() {
                   onChange={(event) => setName(event.target.value)}
                   required
                   minLength={2}
+                  maxLength={100}
+                  disabled={loading}
                   className={`${inputClass} pr-4`}
                 />
               </div>
@@ -326,6 +376,8 @@ export default function SignupPage() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   required
+                  maxLength={256}
+                  disabled={loading}
                   className={`${inputClass} pr-4`}
                 />
               </div>
@@ -350,26 +402,41 @@ export default function SignupPage() {
                   autoComplete="new-password"
                   placeholder="At least 8 characters"
                   value={password}
-                  onChange={(event) => setPassword(event.target.value)}
+                  onChange={(event) =>
+                    setPassword(event.target.value)
+                  }
                   required
                   minLength={8}
+                  disabled={loading}
                   className={`${inputClass} pr-12`}
                 />
 
                 <button
                   type="button"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={
+                    showPassword ? "Hide password" : "Show password"
+                  }
+                  aria-pressed={showPassword}
+                  onClick={() =>
+                    setShowPassword((prev) => !prev)
+                  }
                   className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#8490a0] transition hover:bg-white/[0.06] hover:text-white"
                 >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showPassword ? (
+                    <EyeOff size={16} />
+                  ) : (
+                    <Eye size={16} />
+                  )}
                 </button>
               </div>
             </div>
 
             {/* Confirm password */}
             <div>
-              <label htmlFor="confirmPassword" className={labelClass}>
+              <label
+                htmlFor="confirmPassword"
+                className={labelClass}
+              >
                 Confirm password
               </label>
 
@@ -382,21 +449,31 @@ export default function SignupPage() {
                 <input
                   id="confirmPassword"
                   name="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
+                  type={
+                    showConfirmPassword ? "text" : "password"
+                  }
                   autoComplete="new-password"
                   placeholder="Enter your password again"
                   value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  onChange={(event) =>
+                    setConfirmPassword(event.target.value)
+                  }
                   required
+                  disabled={loading}
                   className={`${inputClass} pr-12`}
                 />
 
                 <button
                   type="button"
                   aria-label={
-                    showConfirmPassword ? "Hide password" : "Show password"
+                    showConfirmPassword
+                      ? "Hide password"
+                      : "Show password"
                   }
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-pressed={showConfirmPassword}
+                  onClick={() =>
+                    setShowConfirmPassword((prev) => !prev)
+                  }
                   className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#8490a0] transition hover:bg-white/[0.06] hover:text-white"
                 >
                   {showConfirmPassword ? (
@@ -413,7 +490,10 @@ export default function SignupPage() {
               <input
                 type="checkbox"
                 checked={acceptedTerms}
-                onChange={(event) => setAcceptedTerms(event.target.checked)}
+                onChange={(event) =>
+                  setAcceptedTerms(event.target.checked)
+                }
+                disabled={loading}
                 className="mt-0.5 h-4 w-4 shrink-0 accent-[#b7f56a]"
               />
 
@@ -423,7 +503,7 @@ export default function SignupPage() {
               </span>
             </label>
 
-            {/* Validation feedback */}
+            {/* Error feedback */}
             {error && (
               <p
                 role="alert"
@@ -451,7 +531,7 @@ export default function SignupPage() {
             </button>
           </form>
 
-          <div className="my-[clamp(0.6rem,2.4dvh,1.75rem)] flex shrink-0 items-center gap-3">
+          <div className="my-5 flex shrink-0 items-center gap-3">
             <span className="h-px flex-1 bg-white/[0.08]" />
 
             <span className="whitespace-nowrap text-[10px] text-[#687586]">
@@ -468,7 +548,7 @@ export default function SignupPage() {
             Sign in instead
           </Link>
 
-          <p className="mt-4 hidden shrink-0 text-center text-[10px] leading-5 text-[#687586] [@media(min-height:760px)]:block">
+          <p className="mt-5 text-center text-[10px] leading-5 text-[#687586]">
             Built for the love of the game.
           </p>
         </motion.section>
