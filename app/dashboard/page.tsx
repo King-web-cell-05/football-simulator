@@ -24,6 +24,8 @@ import {
   Menu,
   Plus,
   Search,
+  RefreshCw,
+  AlertCircle,
   Settings,
   ShieldCheck,
   Trophy,
@@ -68,6 +70,13 @@ type DashboardSummary = {
     createdDate: string;
   } | null;
   upcomingFixtures: Fixture[];
+};
+
+type CompetitionRecord = {
+  id: string;
+  name: string;
+  season: string;
+  createdDate: string;
 };
 
 type NavigationItem = {
@@ -409,6 +418,155 @@ function DashboardSkeleton({ section = "dashboard" }: { section?: string }) {
 }
 
 // =====================================================
+// ALL COMPETITIONS — LIVE API
+// =====================================================
+function CompetitionsSection({
+  onCreate,
+  onOpen,
+}: {
+  onCreate: () => void;
+  onOpen: (id: string) => void;
+}) {
+  const reducedMotion = useReducedMotion();
+  const [items, setItems] = useState<CompetitionRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function load() {
+      setLoading(true);
+      setError("");
+      try {
+        const response = await fetch("/api/competitions", {
+          credentials: "same-origin",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const payload: unknown = await response.json().catch(() => null);
+        if (!response.ok) {
+          const message =
+            payload && typeof payload === "object" && "message" in payload &&
+            typeof payload.message === "string"
+              ? payload.message
+              : `Could not load competitions (HTTP ${response.status}).`;
+          throw new Error(message);
+        }
+        if (!Array.isArray(payload)) throw new Error("Unexpected competitions response.");
+        const parsed: CompetitionRecord[] = payload.filter((entry): entry is CompetitionRecord =>
+          entry !== null && typeof entry === "object" &&
+          typeof entry.id === "string" && typeof entry.name === "string"
+        ).map((entry) => ({
+          id: entry.id,
+          name: entry.name,
+          season: typeof entry.season === "string" ? entry.season : "",
+          createdDate: typeof entry.createdDate === "string" ? entry.createdDate : "",
+        }));
+        if (!controller.signal.aborted) setItems(parsed);
+      } catch (cause) {
+        if (!controller.signal.aborted) {
+          setError(cause instanceof Error ? cause.message : "Unable to load competitions.");
+        }
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }
+    void load();
+    return () => controller.abort();
+  }, [reload]);
+
+  const filtered = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return items.filter((item) => `${item.name} ${item.season}`.toLowerCase().includes(term));
+  }, [items, query]);
+
+  return (
+    <section className="space-y-6">
+      <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+        <div>
+          <p className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#b7f56a]">
+            <Goal size={15} /> FootballSim / Tournament Hub
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+            All <span className="text-[#b7f56a]">Competitions</span>
+          </h1>
+          <p className="mt-2 text-sm text-[#8b98aa]">Your tournaments, seasons and competition workspace.</p>
+        </div>
+        <button type="button" onClick={onCreate} className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#b7f56a] px-5 text-xs font-bold text-[#080a0d] hover:bg-[#caff91]">
+          <Plus size={16} /> Create competition
+        </button>
+      </div>
+      <div className="relative overflow-hidden rounded-2xl border border-[#b7f56a]/15 bg-gradient-to-r from-[#142019] via-[#101a16] to-[#101319] p-6 sm:p-8">
+        <PitchLines className="absolute -right-24 -top-20 h-64 w-[450px] text-[#b7f56a]/[0.09]" />
+        <FootballBall className="absolute right-8 top-6 hidden h-24 w-24 text-[#b7f56a]/30 sm:block" animate={!reducedMotion} />
+        <div className="relative max-w-lg">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#b7f56a]">The competition arena</p>
+          <h2 className="mt-3 text-xl font-semibold sm:text-2xl">Every great tournament starts here.</h2>
+          <p className="mt-2 text-xs leading-6 text-[#9aaa9c]">Manage your tournaments and follow every season from kickoff to the final whistle.</p>
+        </div>
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-sm">
+          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#788596]" />
+          <input aria-label="Search competitions" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search competitions or seasons..." className="h-11 w-full rounded-xl border border-white/[0.08] bg-[#101319] pl-11 pr-4 text-xs text-white outline-none placeholder:text-[#667386] focus:border-[#b7f56a]/40" />
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-[#8b98aa]">{loading ? "Loading competitions..." : `${filtered.length} competitions`}</span>
+          <button type="button" disabled={loading} aria-label="Refresh competitions" onClick={() => setReload((value) => value + 1)} className="rounded-xl border border-white/[0.08] bg-[#101319] p-3 text-[#b7f56a] disabled:opacity-50"><RefreshCw size={16} className={loading ? "animate-spin" : ""} /></button>
+        </div>
+      </div>
+      {loading ? (
+        <div role="status" aria-label="Loading competitions" className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className={`${panel} animate-pulse p-6`}>
+              <SkeletonLine className="h-12 w-12" />
+              <SkeletonLine className="mt-8 h-5 w-3/4" />
+              <SkeletonLine className="mt-3 h-3 w-1/3" />
+              <SkeletonLine className="mt-8 h-10 w-full" />
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        <div role="alert" className={`${panel} px-6 py-14 text-center`}>
+          <AlertCircle size={28} className="mx-auto text-red-300" />
+          <h3 className="mt-4 font-semibold">Unable to load competitions</h3>
+          <p className="mt-2 text-xs text-[#8b98aa]">{error}</p>
+          <button type="button" onClick={() => setReload((value) => value + 1)} className="mt-5 rounded-xl bg-[#b7f56a] px-5 py-3 text-xs font-bold text-black">Try again</button>
+        </div>
+      ) : filtered.length ? (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((item, index) => (
+            <motion.article key={item.id} initial={reducedMotion ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: Math.min(index, 8) * 0.04 }} className={`${panel} group relative overflow-hidden p-6 transition-colors hover:border-[#b7f56a]/30`}>
+              <div className="flex items-start justify-between">
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#b7f56a]/20 bg-[#b7f56a]/[0.08] text-[#b7f56a]"><Trophy size={22} /></span>
+                <span className="rounded-full border border-white/[0.09] px-3 py-1.5 text-[9px] text-[#a3afbc]">Tournament</span>
+              </div>
+              <h3 className="mt-7 min-h-12 text-lg font-semibold tracking-tight">{item.name}</h3>
+              <p className="mt-2 text-xs text-[#b7f56a]">{item.season || "Season not specified"}</p>
+              <div className="mt-7 flex items-center gap-2 border-t border-white/[0.07] pt-5 text-[11px] text-[#8794a5]">
+                <CalendarDays size={14} /> Created {item.createdDate && !Number.isNaN(Date.parse(item.createdDate)) ? new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(new Date(item.createdDate)) : "date unavailable"}
+              </div>
+              <button type="button" onClick={() => onOpen(item.id)} className="mt-6 flex w-full items-center justify-between rounded-xl border border-[#b7f56a]/15 bg-[#b7f56a]/[0.05] px-4 py-3 text-xs font-semibold text-[#b7f56a] transition hover:bg-[#b7f56a]/[0.11]">
+                Manage competition <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+              </button>
+            </motion.article>
+          ))}
+        </div>
+      ) : (
+        <div className={`${panel} px-6 py-16 text-center`}>
+          <Trophy size={34} className="mx-auto text-[#b7f56a]" />
+          <h3 className="mt-4 text-lg font-semibold">{query ? "No matching competitions" : "No competitions yet"}</h3>
+          <p className="mt-2 text-xs text-[#8b98aa]">{query ? "Try another search term." : "Create your first competition to get started."}</p>
+          {!query && <button type="button" onClick={onCreate} className="mt-5 rounded-xl bg-[#b7f56a] px-5 py-3 text-xs font-bold text-black">Create competition</button>}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// =====================================================
 // DASHBOARD COMPONENT
 // =====================================================
 
@@ -432,6 +590,7 @@ export default function DashboardPage() {
 
   // Navigation
   const [activeSection, setActiveSection] = useState("dashboard");
+  const [selectedCompetitionId, setSelectedCompetitionId] = useState<string | null>(null);
 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -467,6 +626,7 @@ export default function DashboardPage() {
     const nextSection = validSections.has(section) ? section : "dashboard";
 
     setActiveSection(nextSection);
+    setSelectedCompetitionId(null);
 
     setMobileNavOpen(false);
     setSearchOpen(false);
@@ -1159,6 +1319,26 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
+          ) : activeSection === "competitions" ? (
+            <>
+            {selectedCompetitionId && (
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#b7f56a]/20 bg-[#b7f56a]/[0.05] p-4 text-xs text-[#c9fb8b]">
+                <span>Selected competition: {selectedCompetitionId}. The detailed management view is the next integration step.</span>
+                <button type="button" className="underline" onClick={() => setSelectedCompetitionId(null)}>Dismiss</button>
+              </div>
+            )}
+            <CompetitionsSection
+              onCreate={() => selectSection("create-competition")}
+              onOpen={(competitionId) => {
+                window.history.replaceState(
+                  null,
+                  "",
+                  `${window.location.pathname}?section=competitions&competitionId=${encodeURIComponent(competitionId)}`,
+                );
+                setSelectedCompetitionId(competitionId);
+              }}
+            />
+            </>
           ) : activeSection !== "dashboard" ? (
             <section className="flex min-h-[60vh] flex-col items-center justify-center text-center">
               <FootballBall
