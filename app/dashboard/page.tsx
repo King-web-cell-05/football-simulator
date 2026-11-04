@@ -32,6 +32,7 @@ import type { LucideIcon } from "lucide-react";
 import CompetitionDetails from "@/components/dashboard/competitions-detail";
 import LeaguePhase from "@/components/dashboard/league-phase";
 import Fixtures from "@/components/dashboard/fixtures";
+import Results from "@/components/dashboard/results";
 
 // =====================================================
 // TYPES
@@ -1407,14 +1408,20 @@ export default function DashboardPage() {
                 onOpen={openCompetition}
               />
             )
-          ) : activeSection === "league-phase" ? (
-            <LeaguePhase
-              initialCompetitionId={summary?.activeCompetition?.id}
-              onOpenCompetition={openCompetition}
-            />
-          ) : activeSection === "fixtures" ? (
-            <Fixtures initialCompetitionId={summary?.activeCompetition?.id} />
-          ) : activeSection !== "dashboard" ? (
+       ) : activeSection === "league-phase" ? (
+  <LeaguePhase
+    initialCompetitionId={summary?.activeCompetition?.id}
+    onOpenCompetition={openCompetition}
+  />
+) : activeSection === "fixtures" ? (
+  <Fixtures
+    initialCompetitionId={summary?.activeCompetition?.id}
+  />
+) : activeSection === "results" ? (
+  <Results
+    initialCompetitionId={summary?.activeCompetition?.id}
+  />
+) : activeSection !== "dashboard" ? (
             <section className="flex min-h-[60vh] flex-col items-center justify-center text-center">
               <FootballBall
                 className="h-20 w-20 text-[#b7f56a]"
