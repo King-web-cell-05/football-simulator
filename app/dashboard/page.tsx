@@ -35,6 +35,7 @@ import Fixtures from "@/components/dashboard/fixtures";
 import Results from "@/components/dashboard/results";
 import KnockoutStage from "@/components/dashboard/knockout-stage";
 import Teams from "@/components/dashboard/teams";
+import CreateCompetition from "@/components/dashboard/create-competition";
 
 // =====================================================
 // TYPES
@@ -1398,24 +1399,33 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {activeSection === "competitions" ? (
-            selectedCompetitionId ? (
-              <CompetitionDetails
-                competitionId={selectedCompetitionId}
-                onBack={closeCompetition}
-              />
-            ) : (
-              <CompetitionsSection
-                onCreate={() => selectSection("create-competition")}
-                onOpen={openCompetition}
-              />
-            )
-       ) : activeSection === "league-phase" ? (
+{activeSection === "competitions" ? (
+  selectedCompetitionId ? (
+    <CompetitionDetails
+      competitionId={selectedCompetitionId}
+      onBack={closeCompetition}
+    />
+  ) : (
+    <CompetitionsSection
+      onCreate={() => selectSection("create-competition")}
+      onOpen={openCompetition}
+    />
+  )
+) : activeSection === "create-competition" ? (
+  <CreateCompetition
+    onCreated={() => {
+      selectSection("competitions");
+    }}
+    onCancel={() => {
+      selectSection("competitions");
+    }}
+  />
+) : activeSection === "league-phase" ? (
   <LeaguePhase
     initialCompetitionId={summary?.activeCompetition?.id}
     onOpenCompetition={openCompetition}
   />
-  ) : activeSection === "teams" ? (
+) : activeSection === "teams" ? (
   <Teams />
 ) : activeSection === "fixtures" ? (
   <Fixtures
