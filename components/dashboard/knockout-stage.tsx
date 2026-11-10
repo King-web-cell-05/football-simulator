@@ -13,7 +13,6 @@ import {
   Trophy,
   Zap,
 } from "lucide-react";
-import KnockoutBracket from "@/components/dashboard/knockout-bracket";
 
 
 // =====================================================
@@ -634,19 +633,7 @@ export default function KnockoutStage({
           {/* INTERACTIVE TOURNAMENT BRACKET */}
           {/* =========================================== */}
 
-          <KnockoutBracket
-            tiesByRound={tiesByRound}
-            champion={champion}
-            onSelectRound={(selectedRound) => {
-              setRound(selectedRound);
-              setNotice("");
-
-              window.scrollTo({
-                top: 0,
-                behavior: "smooth",
-              });
-            }}
-          />
+         
 
           {/* =========================================== */}
           {/* ROUND NAVIGATION */}
