@@ -34,6 +34,7 @@ import LeaguePhase from "@/components/dashboard/league-phase";
 import Fixtures from "@/components/dashboard/fixtures";
 import Results from "@/components/dashboard/results";
 import KnockoutStage from "@/components/dashboard/knockout-stage";
+import Teams from "@/components/dashboard/teams";
 
 // =====================================================
 // TYPES
@@ -1414,6 +1415,8 @@ export default function DashboardPage() {
     initialCompetitionId={summary?.activeCompetition?.id}
     onOpenCompetition={openCompetition}
   />
+  ) : activeSection === "teams" ? (
+  <Teams />
 ) : activeSection === "fixtures" ? (
   <Fixtures
     initialCompetitionId={summary?.activeCompetition?.id}
