@@ -13,6 +13,8 @@ import {
   Trophy,
   Zap,
 } from "lucide-react";
+import KnockoutBracket from "@/components/dashboard/knockout-bracket";
+
 
 // =====================================================
 // TYPES
@@ -613,6 +615,7 @@ export default function KnockoutStage({
                 {champion.champion.teamName}
               </h2>
 
+ 
               <p className="mt-2 text-xs text-[#a3b5a5]">
                 Runner-up:{" "}
                 {champion.runnerUp.teamName}
@@ -627,7 +630,27 @@ export default function KnockoutStage({
             </div>
           )}
 
+          {/* =========================================== */}
+          {/* INTERACTIVE TOURNAMENT BRACKET */}
+          {/* =========================================== */}
+
+          <KnockoutBracket
+            tiesByRound={tiesByRound}
+            champion={champion}
+            onSelectRound={(selectedRound) => {
+              setRound(selectedRound);
+              setNotice("");
+
+              window.scrollTo({
+                top: 0,
+                behavior: "smooth",
+              });
+            }}
+          />
+
+          {/* =========================================== */}
           {/* ROUND NAVIGATION */}
+          {/* =========================================== */}
 
           <div
             className="flex gap-2 overflow-x-auto pb-2"
@@ -650,6 +673,7 @@ export default function KnockoutStage({
                     : "border-white/[0.08] bg-[#101319] text-[#91a0b1] hover:text-white"
                 }`}
               >
+
                 {r.name}{" "}
                 {tiesByRound[r.key].length
                   ? `(${tiesByRound[r.key].length})`
@@ -681,94 +705,132 @@ export default function KnockoutStage({
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {ties.length === 0 ? (
-                <button
-                  type="button"
-                  disabled={
-                    !canDraw || loading || !!busy
-                  }
-                  onClick={() =>
-                    void perform(
-                      "draw",
-                      "Generate draw"
-                    )
-                  }
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#b7f56a] px-4 py-3 text-xs font-bold text-[#080a0d] disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {busy ? (
-                    <Loader2
-                      size={15}
-                      className="animate-spin"
-                    />
-                  ) : (
-                    <Zap size={15} />
-                  )}
-                  Generate draw
-                </button>
-              ) : (
-                <>
-                  {round === "final" ? (
-                    <button
-                      type="button"
-                      disabled={
-                        !!busy ||
-                        complete ||
-                        loading
-                      }
-                      onClick={() =>
-                        void perform(
-                          "simulate",
-                          "Simulate final"
-                        )
-                      }
-                      className="rounded-xl bg-[#b7f56a] px-4 py-3 text-xs font-bold text-black disabled:opacity-40"
-                    >
-                      Simulate final
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        disabled={
-                          !!busy ||
-                          loading ||
-                          !firstLegsRemaining
-                        }
-                        onClick={() =>
-                          void perform(
-                            "simulate-first-legs",
-                            "Simulate first legs"
-                          )
-                        }
-                        className="rounded-xl border border-[#b7f56a]/30 bg-[#b7f56a]/10 px-4 py-3 text-xs font-semibold text-[#b7f56a] disabled:opacity-40"
-                      >
-                        Simulate first legs
-                      </button>
+           
+<div className="flex flex-wrap gap-2">
+  {ties.length === 0 ? (
+    <button
+      type="button"
+      disabled={!canDraw || loading || !!busy}
+      onClick={() =>
+        void perform("draw", "Generate draw")
+      }
+      className="inline-flex items-center gap-2 rounded-xl bg-[#b7f56a] px-4 py-3 text-xs font-bold text-[#080a0d] transition hover:bg-[#caff8d] disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      {busy ? (
+        <Loader2
+          size={15}
+          className="animate-spin"
+        />
+      ) : (
+        <Zap size={15} />
+      )}
+      Generate draw
+    </button>
+  ) : (
+    <>
+      {round === "final" ? (
+        complete ? (
+          <div
+            role="status"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#b7f56a]/25 bg-[#b7f56a]/10 px-4 py-3 text-xs font-semibold text-[#b7f56a]"
+          >
+            <CheckCircle2 size={16} />
+            Final Completed
+          </div>
+        ) : (
+          <button
+            type="button"
+            disabled={!!busy || loading}
+            onClick={() =>
+              void perform("simulate", "Simulate final")
+            }
+            className="inline-flex items-center gap-2 rounded-xl bg-[#b7f56a] px-4 py-3 text-xs font-bold text-[#080a0d] transition hover:bg-[#caff8d] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {busy === "simulate" ? (
+              <Loader2
+                size={15}
+                className="animate-spin"
+              />
+            ) : (
+              <Trophy size={15} />
+            )}
+            {busy === "simulate"
+              ? "Simulating Final..."
+              : "Simulate Final"}
+          </button>
+        )
+      ) : complete ? (
+        <div
+          role="status"
+          className="inline-flex items-center gap-2 rounded-xl border border-[#b7f56a]/25 bg-[#b7f56a]/10 px-4 py-3 text-xs font-semibold text-[#b7f56a]"
+        >
+          <CheckCircle2 size={16} />
+          Round Completed
+        </div>
+      ) : (
+        <>
+          <button
+            type="button"
+            disabled={
+              !!busy ||
+              loading ||
+              !firstLegsRemaining
+            }
+            onClick={() =>
+              void perform(
+                "simulate-first-legs",
+                "Simulate first legs"
+              )
+            }
+            className="inline-flex items-center gap-2 rounded-xl border border-[#b7f56a]/30 bg-[#b7f56a]/10 px-4 py-3 text-xs font-semibold text-[#b7f56a] transition hover:bg-[#b7f56a]/20 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {busy === "simulate-first-legs" ? (
+              <Loader2
+                size={15}
+                className="animate-spin"
+              />
+            ) : (
+              <Zap size={15} />
+            )}
+            {busy === "simulate-first-legs"
+              ? "Simulating..."
+              : "Simulate First Legs"}
+          </button>
 
-                      <button
-                        type="button"
-                        disabled={
-                          !!busy ||
-                          loading ||
-                          !allFirstLegsPlayed ||
-                          !secondLegsRemaining
-                        }
-                        onClick={() =>
-                          void perform(
-                            "simulate-second-legs",
-                            "Simulate second legs"
-                          )
-                        }
-                        className="rounded-xl bg-[#b7f56a] px-4 py-3 text-xs font-bold text-black disabled:opacity-40"
-                      >
-                        Simulate second legs
-                      </button>
-                    </>
-                  )}
-                </>
-              )}
-            </div>
+          <button
+            type="button"
+            disabled={
+              !!busy ||
+              loading ||
+              !allFirstLegsPlayed ||
+              !secondLegsRemaining
+            }
+            onClick={() =>
+              void perform(
+                "simulate-second-legs",
+                "Simulate second legs"
+              )
+            }
+            className="inline-flex items-center gap-2 rounded-xl bg-[#b7f56a] px-4 py-3 text-xs font-bold text-[#080a0d] transition hover:bg-[#caff8d] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {busy === "simulate-second-legs" ? (
+              <Loader2
+                size={15}
+                className="animate-spin"
+              />
+            ) : (
+              <Zap size={15} />
+            )}
+            {busy === "simulate-second-legs"
+              ? "Simulating..."
+              : "Simulate Second Legs"}
+          </button>
+        </>
+      )}
+    </>
+  )}
+</div>
+
           </div>
 
           {/* MATCH FIXTURES */}
