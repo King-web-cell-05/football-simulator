@@ -142,7 +142,37 @@ function Metric({
   );
 }
 
-function FixtureCard({ fixture }: { fixture: Fixture }) {
+type TeamLogo = { id: string; logoUrl: string | null };
+
+const backendBase = (
+  process.env.NEXT_PUBLIC_FOOTBALLSIM_API_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:5295"
+).replace(/\/$/, "");
+
+function resolveLogoUrl(value: string | null): string | null {
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith("/")) return `${backendBase}${value}`;
+  return null;
+}
+
+function ClubCrest({ logoUrl, name }: { logoUrl: string | null; name: string }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [logoUrl]);
+  const url = resolveLogoUrl(logoUrl);
+  return (
+    <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#b7f56a]/15 bg-[#b7f56a]/[0.06] text-[#b7f56a]">
+      {url && !failed ? (
+        // External club crests may not be configured in next/image remotePatterns.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={url} alt={`${name} crest`} className="h-9 w-9 object-contain" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
+      ) : <Shield size={21} aria-hidden="true" />}
+    </span>
+  );
+}
+
+function FixtureCard({ fixture, logos }: { fixture: Fixture; logos: Record<string, string | null> }) {
   const completed =
     fixture.isPlayed &&
     fixture.homeScore !== null &&
@@ -175,9 +205,7 @@ function FixtureCard({ fixture }: { fixture: Fixture }) {
 
       <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 px-4 py-7 sm:gap-6 sm:px-6">
         <div className="flex min-w-0 flex-col items-center gap-3 text-center">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#b7f56a]/15 bg-[#b7f56a]/[0.06] text-[#b7f56a]">
-            <Shield size={21} />
-          </span>
+          <ClubCrest logoUrl={logos[fixture.homeTeamId] ?? null} name={fixture.homeTeamName} />
 
           <span
             className={`text-xs font-semibold leading-5 sm:text-sm ${
@@ -219,9 +247,7 @@ function FixtureCard({ fixture }: { fixture: Fixture }) {
         </div>
 
         <div className="flex min-w-0 flex-col items-center gap-3 text-center">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#b7f56a]/15 bg-[#b7f56a]/[0.06] text-[#b7f56a]">
-            <Shield size={21} />
-          </span>
+          <ClubCrest logoUrl={logos[fixture.awayTeamId] ?? null} name={fixture.awayTeamName} />
 
           <span
             className={`text-xs font-semibold leading-5 sm:text-sm ${
@@ -246,6 +272,7 @@ export default function Fixtures({ initialCompetitionId }: Props) {
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [competitionId, setCompetitionId] = useState("");
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
+  const [logos, setLogos] = useState<Record<string, string | null>>({});
 
   const [loadingCompetitions, setLoadingCompetitions] = useState(true);
   const [loadingFixtures, setLoadingFixtures] = useState(false);
@@ -371,6 +398,30 @@ export default function Fixtures({ initialCompetitionId }: Props) {
 
     return () => controller.abort();
   }, [competitionId, refreshKey]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadLogos() {
+      try {
+        const response = await fetch("/api/teams", {
+          cache: "no-store", credentials: "same-origin", signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const payload: unknown = await response.json();
+        const items = Array.isArray(payload) ? payload :
+          isRecord(payload) && Array.isArray(payload.data) ? payload.data : [];
+        const next: Record<string, string | null> = {};
+        for (const item of items) {
+          if (isRecord(item) && typeof item.id === "string") {
+            next[item.id] = typeof item.logoUrl === "string" ? item.logoUrl : null;
+          }
+        }
+        if (!controller.signal.aborted) setLogos(next);
+      } catch { /* Crest fallback remains available. */ }
+    }
+    void loadLogos();
+    return () => controller.abort();
+  }, [refreshKey]);
 
   const selectedCompetition = competitions.find(
     (item) => item.id === competitionId,
@@ -695,7 +746,7 @@ export default function Fixtures({ initialCompetitionId }: Props) {
 
               <div className="grid gap-4 md:grid-cols-2">
                 {matches.map((fixture) => (
-                  <FixtureCard key={fixture.id} fixture={fixture} />
+                  <FixtureCard key={fixture.id} fixture={fixture} logos={logos} />
                 ))}
               </div>
             </div>
