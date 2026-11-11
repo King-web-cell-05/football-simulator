@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Search,
+  Users,
+  ShieldCheck,
+  MailWarning,
+  UserPlus,
   UserCheck,
   UserX,
   ChevronLeft,
@@ -34,6 +38,14 @@ type UsersResponse = {
   pageSize: number;
   totalCount: number;
   totalPages: number;
+};
+
+type UserStats = {
+  totalUsers: number;
+  activeUsers: number;
+  suspendedUsers: number;
+  unverifiedUsers: number;
+  newUsersLast30Days: number;
 };
 
 type StatusFilter =
@@ -98,6 +110,9 @@ export default function AdminUsersPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState("");
   const [notice, setNotice] = useState("");
+  const [stats, setStats] = useState<UserStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState("");
 
   const loadUsers = useCallback(
     async (signal: AbortSignal) => {
@@ -171,6 +186,67 @@ export default function AdminUsersPage() {
       controller.abort();
     };
   }, [loadUsers, refreshKey]);
+
+  // Fetch global account statistics independently of the table filters.
+  // Refreshing the page or changing account status also reloads the cards.
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadStats() {
+      setStatsLoading(true);
+      setStatsError("");
+
+      try {
+        const response = await fetch("/api/admin/users/stats", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        const payload: unknown = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          const message =
+            payload && typeof payload === "object" &&
+            "message" in payload && typeof payload.message === "string"
+              ? payload.message
+              : "Unable to load user statistics.";
+          throw new Error(message);
+        }
+
+        if (!payload || typeof payload !== "object") {
+          throw new Error("Invalid statistics response.");
+        }
+
+        const fields = [
+          "totalUsers", "activeUsers", "suspendedUsers",
+          "unverifiedUsers", "newUsersLast30Days",
+        ] as const;
+
+        if (!fields.every((field) => {
+          const value = (payload as Record<string, unknown>)[field];
+          return typeof value === "number" &&
+            Number.isSafeInteger(value) && value >= 0;
+        })) {
+          throw new Error("Incomplete statistics received from the server.");
+        }
+
+        if (!controller.signal.aborted) {
+          setStats(payload as UserStats);
+        }
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          setStatsError(err instanceof Error ? err.message : "Unable to load statistics.");
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setStatsLoading(false);
+        }
+      }
+    }
+
+    void loadStats();
+    return () => controller.abort();
+  }, [refreshKey]);
 
   // Fetch complete details whenever a user is selected.
   useEffect(() => {
@@ -330,6 +406,52 @@ export default function AdminUsersPage() {
           <button type="button" onClick={() => setNotice("")} aria-label="Dismiss notification"><X className="h-4 w-4" /></button>
         </div>
       )}
+
+      {/* LIVE USER STATISTICS */}
+      <section aria-label="User statistics" className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-base font-semibold text-white">Account Overview</h2>
+            <p className="mt-1 text-xs text-slate-400">
+              Live totals across all accounts, independent of table filters.
+            </p>
+          </div>
+          {statsLoading && (
+            <span role="status" className="inline-flex items-center gap-2 text-xs text-slate-400">
+              <RefreshCw className="h-3.5 w-3.5 animate-spin" /> Updating statistics
+            </span>
+          )}
+        </div>
+        {statsError && (
+          <div role="alert" className="rounded-xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-300">
+            {statsError}
+            <button type="button" className="ml-3 underline underline-offset-2" onClick={() => setRefreshKey((value) => value + 1)}>
+              Retry
+            </button>
+          </div>
+        )}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {([
+            { label: "Total Users", value: stats?.totalUsers, Icon: Users, accent: "text-white", background: "bg-white/10" },
+            { label: "Active Users", value: stats?.activeUsers, Icon: UserCheck, accent: "text-lime-300", background: "bg-lime-300/10" },
+            { label: "Suspended Users", value: stats?.suspendedUsers, Icon: UserX, accent: "text-red-300", background: "bg-red-300/10" },
+            { label: "Unverified Users", value: stats?.unverifiedUsers, Icon: MailWarning, accent: "text-amber-300", background: "bg-amber-300/10" },
+            { label: "New (Last 30 Days)", value: stats?.newUsersLast30Days, Icon: UserPlus, accent: "text-sky-300", background: "bg-sky-300/10" },
+          ]).map(({ label, value, Icon, accent, background }) => (
+            <div key={label} className="rounded-2xl border border-white/10 bg-[#11161D] p-5">
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-xs font-medium text-slate-400">{label}</p>
+                <span className={`rounded-xl p-2 ${background} ${accent}`}>
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                </span>
+              </div>
+              <p className={`mt-5 text-3xl font-semibold tabular-nums ${accent}`}>
+                {statsLoading && !stats ? "…" : value?.toLocaleString("en-NG") ?? "—"}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* TOOLBAR */}
       <div className="rounded-2xl border border-white/10 bg-[#11161D] p-4 sm:p-5">
