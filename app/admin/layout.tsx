@@ -1,25 +1,27 @@
 
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
+
 import { AdminShell } from "@/components/admin/admin-shell";
 
-// Next.js 16.4.1:
 // Allow blocking rendering for authenticated routes.
 export const instant = false;
 
-async function verifyAdminAccess() {
+async function verifyAdminAccess(): Promise<void> {
   const cookieStore = await cookies();
 
   const token = cookieStore.get(
     "footballsim_session"
   )?.value;
 
-  // No session: redirect to login.
+  // Redirect unauthenticated users.
   if (!token) {
     redirect("/login");
   }
 
+  // Read backend API configuration.
   const apiUrl = process.env.FOOTBALLSIM_API_URL;
 
   if (!apiUrl) {
@@ -28,11 +30,13 @@ async function verifyAdminAccess() {
     );
   }
 
+  const baseUrl = apiUrl.replace(/\/+$/, "");
+
   let response: Response;
 
   try {
     response = await fetch(
-      `${apiUrl.replace(/\/+$/, "")}/api/admin/dashboard/overview`,
+      `${baseUrl}/api/admin/dashboard/overview`,
       {
         method: "GET",
         headers: {
@@ -49,19 +53,20 @@ async function verifyAdminAccess() {
     );
   }
 
-  // Expired or invalid session.
+  // Invalid or expired authentication token.
   if (response.status === 401) {
     redirect("/login");
   }
 
-  // Authenticated but not an administrator.
+  // Authenticated user without admin privileges.
   if (response.status === 403) {
     redirect("/dashboard");
   }
 
+  // Handle unexpected backend errors.
   if (!response.ok) {
     throw new Error(
-      "Unable to verify administrator access."
+      `Unable to verify administrator access. Status: ${response.status}`
     );
   }
 }
@@ -71,7 +76,18 @@ export default async function AdminLayout({
 }: {
   children: ReactNode;
 }) {
+  // Wait for an actual request before rendering.
+  // Prevents blocking-prerender errors involving
+  // Date.now() and uncached authentication requests.
+  await connection();
+
+  // Verify the administrator's session.
   await verifyAdminAccess();
 
-  return <AdminShell>{children}</AdminShell>;
+  // Render the existing admin interface.
+  return (
+    <AdminShell>
+      {children}
+    </AdminShell>
+  );
 }
