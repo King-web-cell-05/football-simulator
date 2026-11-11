@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   Bell,
   Check,
@@ -10,7 +10,6 @@ import {
   Eye,
   EyeOff,
   LockKeyhole,
-  LogOut,
   Monitor,
   Moon,
   Palette,
@@ -32,6 +31,8 @@ type ThemePreference = "dark" | "light" | "system";
 type Profile = {
   fullName: string;
   email: string;
+  isEmailVerified: boolean;
+  createdAtUtc: string | null;
 };
 
 const navigation = [
@@ -121,10 +122,15 @@ export default function Settings() {
   const [profile, setProfile] = useState<Profile>({
     fullName: "",
     email: "",
+    isEmailVerified: false,
+    createdAtUtc: null,
   });
 
-  const [profileLoading, setProfileLoading] =
-    useState(true);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [savedName, setSavedName] = useState("");
+  const [messageType, setMessageType] = useState<"success" | "error" | "info">("info");
 
   const [theme, setTheme] =
     useState<ThemePreference>("dark");
@@ -150,91 +156,133 @@ export default function Settings() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
 
     async function loadProfile() {
       try {
-        const response = await fetch("/api/auth/me", {
+        const response = await fetch("/api/account/profile", {
           credentials: "same-origin",
           cache: "no-store",
+          signal: controller.signal,
         });
-
+        const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-          throw new Error("Could not load profile.");
+          throw new Error(data.message || "Unable to load your profile.");
         }
-
-        const data = await response.json();
-
-        if (cancelled) return;
-
-        const user = data.user ?? data;
-
+        if (controller.signal.aborted) return;
+        const name = typeof data.fullName === "string" ? data.fullName : "";
         setProfile({
-          fullName:
-            user.fullName ??
-            user.name ??
-            user.userName ??
-            "",
-          email: user.email ?? "",
+          fullName: name,
+          email: typeof data.email === "string" ? data.email : "",
+          isEmailVerified: data.isEmailVerified === true,
+          createdAtUtc: data.createdAtUtc ?? null,
         });
-      } catch {
-        if (!cancelled) {
-          setMessage(
-            "Profile information is unavailable. Check your authentication session."
-          );
+        setSavedName(name);
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          notify(error instanceof Error ? error.message : "Unable to load profile.", "error");
         }
       } finally {
-        if (!cancelled) {
-          setProfileLoading(false);
-        }
+        if (!controller.signal.aborted) setProfileLoading(false);
       }
     }
 
-    loadProfile();
-
-    return () => {
-      cancelled = true;
-    };
+    void loadProfile();
+    return () => controller.abort();
   }, []);
 
-  function showMessage(text: string) {
+  function notify(text: string, type: "success" | "error" | "info" = "info") {
     setMessage(text);
+    setMessageType(type);
   }
 
-  function handleProfileSave() {
-    showMessage(
-      "Profile editing requires a backend update endpoint. Your changes have not been saved."
-    );
+  async function handleProfileSave() {
+    const fullName = profile.fullName.trim();
+    if (fullName.length < 2 || fullName.length > 100) {
+      notify("Full name must contain between 2 and 100 characters.", "error");
+      return;
+    }
+    if (fullName === savedName) {
+      notify("Your profile is already up to date.");
+      return;
+    }
+
+    setProfileSaving(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/account/profile", {
+        method: "PUT",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName }),
+        cache: "no-store",
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to save profile changes.");
+      }
+      const updated = data.user ?? data;
+      const updatedName = updated.fullName ?? fullName;
+      setProfile((previous) => ({ ...previous, fullName: updatedName }));
+      setSavedName(updatedName);
+      notify(data.message || "Profile updated successfully.", "success");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Unable to save profile.", "error");
+    } finally {
+      setProfileSaving(false);
+    }
   }
 
-  function handlePasswordChange(
-    event: React.FormEvent<HTMLFormElement>
-  ) {
+  async function handlePasswordChange(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    if (
-      passwords.newPassword !==
-      passwords.confirmPassword
-    ) {
-      showMessage("The new passwords do not match.");
+    if (!passwords.currentPassword) {
+      notify("Enter your current password.", "error");
       return;
     }
-
     if (passwords.newPassword.length < 8) {
-      showMessage(
-        "Your new password must contain at least 8 characters."
-      );
+      notify("New password must contain at least 8 characters.", "error");
+      return;
+    }
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      notify("The new passwords do not match.", "error");
+      return;
+    }
+    if (passwords.currentPassword === passwords.newPassword) {
+      notify("Choose a new password different from your current one.", "error");
       return;
     }
 
-    showMessage(
-      "Password changes require a secure backend endpoint. No password has been changed."
-    );
+    setPasswordSaving(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/account/password", {
+        method: "PUT",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(passwords),
+        cache: "no-store",
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const validationErrors = data.errors && typeof data.errors === "object"
+          ? Object.values(data.errors).flat().join(" ")
+          : null;
+        throw new Error(validationErrors || data.message || "Unable to change password.");
+      }
+      setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setShowCurrentPassword(false);
+      setShowNewPassword(false);
+      notify(data.message || "Password updated successfully.", "success");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Unable to change password.", "error");
+    } finally {
+      setPasswordSaving(false);
+    }
   }
 
   function handleThemeChange(value: ThemePreference) {
     setTheme(value);
-    showMessage(
+    notify(
       "Theme preference selected. Global theme switching will be connected to the dashboard layout."
     );
   }
@@ -248,7 +296,7 @@ export default function Settings() {
       [key]: value,
     }));
 
-    showMessage(
+    notify(
       "Notification preference updated for this page only. Backend persistence is not yet connected."
     );
   }
@@ -277,7 +325,7 @@ export default function Settings() {
         {message && (
           <div
             role="status"
-            className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-[#b7f56a]/20 bg-[#b7f56a]/[0.06] px-4 py-3 text-sm text-slate-200"
+            className={`mb-6 flex items-start justify-between gap-4 rounded-xl border px-4 py-3 text-sm ${messageType === "error" ? "border-red-400/25 bg-red-400/10 text-red-200" : messageType === "success" ? "border-[#b7f56a]/30 bg-[#b7f56a]/10 text-[#dcffb9]" : "border-white/15 bg-white/5 text-slate-200"}`}
           >
             <span>{message}</span>
 
@@ -431,21 +479,27 @@ export default function Settings() {
                   </label>
                 </div>
 
+                <div className="mt-5 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                  <span className={profile.isEmailVerified ? "rounded-full border border-[#b7f56a]/25 bg-[#b7f56a]/10 px-3 py-1 text-[#b7f56a]" : "rounded-full border border-amber-400/25 bg-amber-400/10 px-3 py-1 text-amber-300"}>
+                    {profile.isEmailVerified ? "Email verified" : "Email not verified"}
+                  </span>
+                  {profile.createdAtUtc && (
+                    <span>Member since {new Date(profile.createdAtUtc).toLocaleDateString()}</span>
+                  )}
+                </div>
                 <p className="mt-4 text-xs leading-5 text-slate-500">
-                  Email changes require verification.
-                  Profile updates will be enabled when
-                  the backend update endpoint is ready.
+                  Your email address is read-only. You can update your full name above.
                 </p>
 
                 <div className="mt-8 flex justify-end border-t border-white/10 pt-6">
                   <button
                     type="button"
                     onClick={handleProfileSave}
-                    disabled={profileLoading}
+                    disabled={profileLoading || profileSaving || profile.fullName.trim() === savedName}
                     className="inline-flex items-center gap-2 rounded-xl bg-[#b7f56a] px-5 py-3 text-sm font-bold text-[#101510] transition hover:bg-[#c9ff87] disabled:opacity-50"
                   >
                     <Save size={17} />
-                    Save changes
+                    {profileSaving ? "Saving..." : "Save changes"}
                   </button>
                 </div>
               </div>
@@ -472,10 +526,8 @@ export default function Settings() {
                     </p>
 
                     <p className="mt-1 text-xs leading-5 text-slate-400">
-                      FootballSim uses authenticated
-                      sessions. Password updates will
-                      require verification of your
-                      current password.
+                      Enter your current password to authorize the change.
+                      Existing sessions may remain active until they expire.
                     </p>
                   </div>
                 </div>
@@ -587,10 +639,11 @@ export default function Settings() {
 
                   <button
                     type="submit"
-                    className="inline-flex items-center gap-2 rounded-xl bg-[#b7f56a] px-5 py-3 text-sm font-bold text-[#101510] hover:bg-[#c9ff87]"
+                    disabled={passwordSaving}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#b7f56a] px-5 py-3 text-sm font-bold text-[#101510] hover:bg-[#c9ff87] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <LockKeyhole size={17} />
-                    Update password
+                    {passwordSaving ? "Updating..." : "Update password"}
                   </button>
                 </form>
               </div>
