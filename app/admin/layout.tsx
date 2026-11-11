@@ -2,6 +2,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
+import { AdminShell } from "@/components/admin/admin-shell";
 
 // Next.js 16.4.1:
 // Allow blocking rendering for authenticated routes.
@@ -72,9 +73,5 @@ export default async function AdminLayout({
 }) {
   await verifyAdminAccess();
 
-  return (
-    <div className="min-h-screen bg-[#090C10] text-white">
-      {children}
-    </div>
-  );
+  return <AdminShell>{children}</AdminShell>;
 }
