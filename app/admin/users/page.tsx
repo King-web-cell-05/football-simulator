@@ -22,6 +22,12 @@ type User = {
   createdAtUtc: string;
 };
 
+type UserDetails = User & {
+  emailVerifiedAtUtc: string | null;
+  competitionCount: number;
+  privateTeamCount: number;
+};
+
 type UsersResponse = {
   items: User[];
   page: number;
@@ -82,6 +88,9 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] =
     useState<User | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState("");
   const [pendingAction, setPendingAction] = useState<{
     user: User;
     action: "suspend" | "reactivate";
@@ -162,6 +171,64 @@ export default function AdminUsersPage() {
       controller.abort();
     };
   }, [loadUsers, refreshKey]);
+
+  // Fetch complete details whenever a user is selected.
+  useEffect(() => {
+    if (!selectedUser) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const id = selectedUser.id;
+    setUserDetails(null);
+    setDetailsError("");
+    setDetailsLoading(true);
+
+    async function loadDetails() {
+      try {
+        const response = await fetch(
+          `/api/admin/users/${encodeURIComponent(id)}`,
+          { cache: "no-store", signal: controller.signal }
+        );
+
+        const payload: unknown = await response.json().catch(() => null);
+        if (!response.ok) {
+          const message =
+            payload && typeof payload === "object" &&
+            "message" in payload && typeof payload.message === "string"
+              ? payload.message
+              : "Unable to load user details.";
+          throw new Error(message);
+        }
+
+        if (
+          !payload || typeof payload !== "object" ||
+          !("id" in payload) || payload.id !== id ||
+          !("competitionCount" in payload) ||
+          typeof payload.competitionCount !== "number" ||
+          !("privateTeamCount" in payload) ||
+          typeof payload.privateTeamCount !== "number"
+        ) {
+          throw new Error("The server returned incomplete user details.");
+        }
+
+        if (!controller.signal.aborted) {
+          setUserDetails(payload as UserDetails);
+        }
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          setDetailsError(err instanceof Error ? err.message : "Unable to load user details.");
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setDetailsLoading(false);
+        }
+      }
+    }
+
+    void loadDetails();
+    return () => controller.abort();
+  }, [selectedUser?.id]);
 
   function requestAction(user: User) {
     if (user.role.toLowerCase() === "admin") return;
@@ -547,7 +614,17 @@ export default function AdminUsersPage() {
               </div>
             </div>
 
-            <div className="space-y-4 rounded-xl border border-white/10 bg-white/[0.025] p-4">
+            {detailsLoading && (
+              <p role="status" className="mb-4 text-sm text-slate-400">
+                Loading complete user details...
+              </p>
+            )}
+            {detailsError && (
+              <p role="alert" className="mb-4 rounded-lg border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-300">
+                {detailsError}
+              </p>
+            )}
+            <div className="max-h-[50vh] space-y-4 overflow-y-auto rounded-xl border border-white/10 bg-white/[0.025] p-4">
               {[
                 ["User ID", selectedUser.id],
                 ["Full Name", selectedUser.fullName],
@@ -570,6 +647,11 @@ export default function AdminUsersPage() {
                     ? formatDate(selectedUser.suspendedAtUtc)
                     : "Not suspended",
                 ],
+                ...(userDetails ? [
+                  ["Email Verified At", userDetails.emailVerifiedAtUtc ? formatDate(userDetails.emailVerifiedAtUtc) : "Not verified"],
+                  ["Competitions Created", String(userDetails.competitionCount)],
+                  ["Private Teams Created", String(userDetails.privateTeamCount)],
+                ] : []),
               ].map(([label, value]) => (
                 <div
                   key={label}
