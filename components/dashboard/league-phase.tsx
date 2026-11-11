@@ -9,7 +9,6 @@ import {
   ArrowRight,
   CheckCircle2,
   ChevronDown,
-  CircleMinus,
   RefreshCw,
   Search,
   Shield,
@@ -18,6 +17,10 @@ import {
   CalendarDays,
   Target,
 } from "lucide-react";
+
+// ==========================================
+// TYPES
+// ==========================================
 
 type Competition = {
   id: string;
@@ -43,7 +46,7 @@ type Standing = {
 type Team = {
   id: string;
   name: string;
-  logoUrl?: string | null;
+  logoUrl: string | null;
 };
 
 type Zone = "direct" | "playoffs" | "eliminated";
@@ -57,6 +60,54 @@ const surface =
   "rounded-2xl border border-white/[0.08] bg-[#101319]";
 
 const numberFormatter = new Intl.NumberFormat("en-GB");
+
+const backendBase = (
+  process.env.NEXT_PUBLIC_FOOTBALLSIM_API_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:5295"
+).replace(/\/+$/, "");
+
+// ==========================================
+// LOGO URL RESOLVER
+// ==========================================
+
+function resolveLogoUrl(
+  value: string | null | undefined,
+): string | null {
+  if (!value?.trim()) return null;
+
+  const logo = value.trim().replace(/\\/g, "/");
+
+  if (/^https?:\/\//i.test(logo)) {
+    return logo;
+  }
+
+  // Avoid protocol-relative URLs.
+  if (logo.startsWith("//")) {
+    return null;
+  }
+
+  // Reject unsupported URL schemes.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(logo)) {
+    return null;
+  }
+
+  // Support backend-relative paths.
+  try {
+    const base = new URL(backendBase);
+
+    return new URL(
+      logo.startsWith("/") ? logo : `/${logo}`,
+      base,
+    ).toString();
+  } catch {
+    return null;
+  }
+}
+
+// ==========================================
+// QUALIFICATION ZONES
+// ==========================================
 
 const zoneStyles = {
   direct: {
@@ -88,6 +139,10 @@ function getZone(position: number): Zone {
   return "eliminated";
 }
 
+// ==========================================
+// API HELPERS
+// ==========================================
+
 function isRecord(
   value: unknown,
 ): value is Record<string, unknown> {
@@ -112,7 +167,9 @@ function getErrorMessage(
   return fallback;
 }
 
-function parseCompetitions(value: unknown): Competition[] {
+function parseCompetitions(
+  value: unknown,
+): Competition[] {
   if (!Array.isArray(value)) {
     throw new Error("Invalid competitions API response.");
   }
@@ -125,8 +182,8 @@ function parseCompetitions(value: unknown): Competition[] {
         typeof item.name === "string",
     )
     .map((item) => ({
-      id: item.id,
-      name: item.name,
+      id: item.id as string,
+      name: item.name as string,
       season:
         typeof item.season === "string"
           ? item.season
@@ -204,6 +261,10 @@ function parseTeams(value: unknown): Team[] {
     }));
 }
 
+// ==========================================
+// CLUB CREST
+// ==========================================
+
 function ClubCrest({
   name,
   logoUrl,
@@ -213,17 +274,18 @@ function ClubCrest({
 }) {
   const [failed, setFailed] = useState(false);
 
+  const resolvedUrl = resolveLogoUrl(logoUrl);
+
   useEffect(() => {
     setFailed(false);
-  }, [logoUrl]);
+  }, [resolvedUrl]);
 
   return (
     <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.035]">
-      {logoUrl && !failed ? (
-        // External club logos may not be configured in next.config.
+      {resolvedUrl && !failed ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={logoUrl}
+          src={resolvedUrl}
           alt={`${name} crest`}
           loading="lazy"
           referrerPolicy="no-referrer"
@@ -231,11 +293,19 @@ function ClubCrest({
           className="h-8 w-8 object-contain"
         />
       ) : (
-        <Shield size={18} className="text-[#b7f56a]" />
+        <Shield
+          size={18}
+          className="text-[#b7f56a]"
+          aria-hidden="true"
+        />
       )}
     </span>
   );
 }
+
+// ==========================================
+// METRIC CARD
+// ==========================================
 
 function Metric({
   label,
@@ -262,6 +332,10 @@ function Metric({
     </div>
   );
 }
+
+// ==========================================
+// MAIN COMPONENT
+// ==========================================
 
 export default function LeaguePhase({
   initialCompetitionId,
@@ -303,20 +377,26 @@ export default function LeaguePhase({
     setReload((previous) => previous + 1);
   }, []);
 
-  // Load competitions and available team crests.
+  // ==========================================
+  // LOAD COMPETITIONS AND CLUB CRESTS
+  // ==========================================
+
   useEffect(() => {
     const controller = new AbortController();
 
-    async function loadInitialData() {
+    async function loadCompetitions() {
       setLoadingCompetitions(true);
       setCompetitionError("");
 
       try {
-        const response = await fetch("/api/competitions", {
-          cache: "no-store",
-          credentials: "same-origin",
-          signal: controller.signal,
-        });
+        const response = await fetch(
+          "/api/competitions",
+          {
+            cache: "no-store",
+            credentials: "same-origin",
+            signal: controller.signal,
+          },
+        );
 
         const payload: unknown = await response
           .json()
@@ -338,14 +418,20 @@ export default function LeaguePhase({
         setCompetitions(list);
 
         setCompetitionId((previous) => {
-          if (list.some((c) => c.id === previous)) {
+          if (
+            list.some(
+              (competition) =>
+                competition.id === previous,
+            )
+          ) {
             return previous;
           }
 
           if (
             initialCompetitionId &&
             list.some(
-              (c) => c.id === initialCompetitionId,
+              (competition) =>
+                competition.id === initialCompetitionId,
             )
           ) {
             return initialCompetitionId;
@@ -386,18 +472,20 @@ export default function LeaguePhase({
           setTeams(parseTeams(payload));
         }
       } catch {
-        // Team crests are optional.
-        // Standings remain usable without them.
+        // Standings remain usable without logos.
       }
     }
 
-    void loadInitialData();
+    void loadCompetitions();
     void loadTeams();
 
     return () => controller.abort();
   }, [initialCompetitionId, reload]);
 
-  // Load current competition standings.
+  // ==========================================
+  // LOAD STANDINGS
+  // ==========================================
+
   useEffect(() => {
     if (!competitionId) {
       setStandings([]);
@@ -462,21 +550,35 @@ export default function LeaguePhase({
     return () => controller.abort();
   }, [competitionId, reload]);
 
+  // ==========================================
+  // SELECTED COMPETITION
+  // ==========================================
+
   const selectedCompetition = competitions.find(
     (competition) => competition.id === competitionId,
   );
 
+  // ==========================================
+  // CLUB LOGO LOOKUP
+  // ==========================================
+
   const logoByTeamId = useMemo(() => {
-    return new Map(
-      teams.map((team) => [
-        team.id.toLowerCase(),
+    const logoMap = new Map<string, string | null>();
+
+    for (const team of teams) {
+      logoMap.set(
+        team.id.trim().toLowerCase(),
         team.logoUrl,
-      ]),
-    );
+      );
+    }
+
+    return logoMap;
   }, [teams]);
 
-  // UEFA qualification zones only apply to
-  // the full 36-club format.
+  // ==========================================
+  // UEFA QUALIFICATION ZONES
+  // ==========================================
+
   const usesUefaZones = standings.length === 36;
 
   const filteredStandings = useMemo(() => {
@@ -501,6 +603,10 @@ export default function LeaguePhase({
     usesUefaZones,
   ]);
 
+  // ==========================================
+  // COMPETITION STATISTICS
+  // ==========================================
+
   const stats = useMemo(() => {
     const totalTeams = standings.length;
 
@@ -516,19 +622,22 @@ export default function LeaguePhase({
 
     const direct = usesUefaZones
       ? standings.filter(
-          (team) => getZone(team.position) === "direct",
+          (team) =>
+            getZone(team.position) === "direct",
         ).length
       : 0;
 
     const playoffs = usesUefaZones
       ? standings.filter(
-          (team) => getZone(team.position) === "playoffs",
+          (team) =>
+            getZone(team.position) === "playoffs",
         ).length
       : 0;
 
     const eliminated = usesUefaZones
       ? standings.filter(
-          (team) => getZone(team.position) === "eliminated",
+          (team) =>
+            getZone(team.position) === "eliminated",
         ).length
       : 0;
 
@@ -549,17 +658,21 @@ export default function LeaguePhase({
   const expectedFixtures =
     (standings.length * (standings.length - 1)) / 2;
 
-  // This indicates that the registered clubs have
-  // completed the expected single round-robin matches.
   const isComplete =
     standings.length >= 2 &&
     standings.every(
-      (team) => team.played === standings.length - 1,
+      (team) =>
+        team.played === standings.length - 1,
     );
+
+  // ==========================================
+  // RENDER
+  // ==========================================
 
   return (
     <section className="space-y-6 text-white">
       {/* HEADER */}
+
       <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
         <div>
           <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#b7f56a]">
@@ -602,6 +715,7 @@ export default function LeaguePhase({
       </div>
 
       {/* HERO */}
+
       <motion.div
         initial={
           reducedMotion
@@ -661,6 +775,7 @@ export default function LeaguePhase({
       </motion.div>
 
       {/* COMPETITION SELECTOR */}
+
       <div className={`${surface} p-5 sm:p-6`}>
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div className="w-full max-w-md">
@@ -728,6 +843,7 @@ export default function LeaguePhase({
       </div>
 
       {/* SUMMARY */}
+
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Metric
           label="Registered clubs"
@@ -759,6 +875,7 @@ export default function LeaguePhase({
       </div>
 
       {/* LEAGUE TABLE */}
+
       <div className={`${surface} overflow-hidden`}>
         <div className="flex flex-col justify-between gap-4 border-b border-white/[0.07] p-5 sm:p-6 xl:flex-row xl:items-center">
           <div>
@@ -922,7 +1039,9 @@ export default function LeaguePhase({
 
                   const logoUrl =
                     logoByTeamId.get(
-                      team.teamId.toLowerCase(),
+                      team.teamId
+                        .trim()
+                        .toLowerCase(),
                     ) ?? null;
 
                   return (
@@ -992,6 +1111,7 @@ export default function LeaguePhase({
                             <span
                               className={`h-1.5 w-1.5 rounded-full ${style.dot}`}
                             />
+
                             {style.label}
                           </span>
                         </td>
@@ -1036,6 +1156,7 @@ export default function LeaguePhase({
       </div>
 
       {/* BOTTOM STATISTICS */}
+
       {standings.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-3">
           <Metric
