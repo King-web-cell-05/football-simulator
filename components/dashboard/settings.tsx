@@ -4,19 +4,13 @@
 import { useEffect, useState, type FormEvent } from "react";
 import {
   Bell,
-  Check,
   ChevronRight,
-  CircleHelp,
   Eye,
   EyeOff,
   LockKeyhole,
-  Monitor,
-  Moon,
-  Palette,
   Save,
   Settings2,
   ShieldCheck,
-  Sun,
   UserRound,
 } from "lucide-react";
 
@@ -48,12 +42,7 @@ const navigation = [
     description: "Password and account access",
     icon: ShieldCheck,
   },
-  {
-    id: "appearance",
-    label: "Appearance",
-    description: "Personalize your workspace",
-    icon: Palette,
-  },
+
   {
     id: "notifications",
     label: "Notifications",
@@ -649,93 +638,7 @@ export default function Settings() {
               </div>
             )}
 
-            {/* APPEARANCE */}
-
-            {activeTab === "appearance" && (
-              <div>
-                <SectionHeading
-                  title="Appearance"
-                  description="Choose how FootballSim should look on your device."
-                />
-
-                <div className="grid gap-4 sm:grid-cols-3">
-                  {(
-                    [
-                      {
-                        id: "dark",
-                        label: "Dark",
-                        icon: Moon,
-                      },
-                      {
-                        id: "light",
-                        label: "Light",
-                        icon: Sun,
-                      },
-                      {
-                        id: "system",
-                        label: "System",
-                        icon: Monitor,
-                      },
-                    ] as const
-                  ).map((option) => {
-                    const Icon = option.icon;
-                    const selected = theme === option.id;
-
-                    return (
-                      <button
-                        type="button"
-                        key={option.id}
-                        onClick={() =>
-                          handleThemeChange(option.id)
-                        }
-                        className={`relative flex flex-col items-center gap-4 rounded-2xl border p-6 transition ${
-                          selected
-                            ? "border-[#b7f56a] bg-[#b7f56a]/[0.07]"
-                            : "border-white/10 bg-white/[0.025] hover:border-white/20"
-                        }`}
-                      >
-                        {selected && (
-                          <Check
-                            size={17}
-                            className="absolute right-3 top-3 text-[#b7f56a]"
-                          />
-                        )}
-
-                        <Icon
-                          size={29}
-                          className={
-                            selected
-                              ? "text-[#b7f56a]"
-                              : "text-slate-400"
-                          }
-                        />
-
-                        <span className="text-sm font-semibold">
-                          {option.label}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-6 rounded-xl border border-white/[0.07] bg-white/[0.025] p-4">
-                  <div className="flex items-start gap-3">
-                    <CircleHelp
-                      size={19}
-                      className="mt-0.5 text-slate-400"
-                    />
-
-                    <p className="text-sm leading-6 text-slate-400">
-                      Your selection is currently a
-                      preview preference. We'll connect
-                      it to the global dashboard theme
-                      after the settings backend and
-                      layout integration are complete.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+         
 
             {/* NOTIFICATIONS */}
 
