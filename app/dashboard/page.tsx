@@ -149,11 +149,7 @@ const navigation: {
         icon: CalendarClock,
         section: "results",
       },
-      {
-        label: "Standings",
-        icon: ChartNoAxesCombined,
-        section: "standings",
-      },
+    
     ],
   },
   {
