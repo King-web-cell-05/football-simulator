@@ -40,9 +40,9 @@ type Competition = {
   ownerName: string | null;
   ownerEmail: string | null;
   createdDate: string;
-  clubCount: number;
-  totalMatches: number;
-  playedMatches: number;
+  teamCount: number;
+  matchCount: number;
+  playedMatchCount: number;
 };
 
 type CompetitionResponse = {
@@ -53,12 +53,34 @@ type CompetitionResponse = {
   totalPages: number;
 };
 
-type Club = {
-  id: string;
-  name: string;
-  country: string | null;
-  isDefault: boolean;
-  logoUrl: string | null;
+type CompetitionTeam = {
+  teamId: string;
+  teamName: string;
+  groupName: string;
+};
+
+type CompetitionDetails = Competition & {
+  teams: CompetitionTeam[];
+  pendingMatchCount: number;
+  knockoutTieCount: number;
+};
+
+type CompetitionStats = {
+  totalCompetitions: number;
+  totalCreators: number;
+  totalParticipations: number;
+  totalMatches: number;
+  playedMatches: number;
+  pendingMatches: number;
+};
+
+const emptyStats: CompetitionStats = {
+  totalCompetitions: 0,
+  totalCreators: 0,
+  totalParticipations: 0,
+  totalMatches: 0,
+  playedMatches: 0,
+  pendingMatches: 0,
 };
 
 const PAGE_SIZE = 10;
@@ -86,25 +108,25 @@ function formatDate(value: string) {
 }
 
 function getProgress(c: Competition) {
-  if (c.totalMatches <= 0) return 0;
+  if (c.matchCount <= 0) return 0;
 
   return Math.min(
     100,
     Math.max(
       0,
       Math.round(
-        (c.playedMatches / c.totalMatches) * 100
+        (c.playedMatchCount / c.matchCount) * 100
       )
     )
   );
 }
 
 function getStatus(c: Competition) {
-  if (c.totalMatches === 0) {
+  if (c.matchCount === 0) {
     return "Not started";
   }
 
-  if (c.playedMatches >= c.totalMatches) {
+  if (c.playedMatchCount >= c.matchCount) {
     return "League phase complete";
   }
 
@@ -206,31 +228,30 @@ function CompetitionDetailsModal({
   competition: Competition;
   onClose: () => void;
 }) {
-  const [clubs, setClubs] = useState<Club[]>([]);
+  const [details, setDetails] = useState<CompetitionDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
 
-  const progress = getProgress(competition);
-  const pending = Math.max(
+  const progress = getProgress(details ?? competition);
+  const pending = details?.pendingMatchCount ?? Math.max(
     0,
-    competition.totalMatches -
-      competition.playedMatches
+    competition.matchCount - competition.playedMatchCount
   );
 
   useEffect(() => {
     const controller = new AbortController();
 
-    async function loadClubs() {
+    async function loadDetails() {
       setLoading(true);
       setError("");
-      setClubs([]);
+      setDetails(null);
 
       try {
         const response = await fetch(
           `/api/admin/competitions/${encodeURIComponent(
             competition.id
-          )}/clubs`,
+          )}`,
           {
             cache: "no-store",
             credentials: "same-origin",
@@ -246,32 +267,27 @@ function CompetitionDetailsModal({
           throw new Error(
             errorMessage(
               payload,
-              "Unable to load participating clubs."
+              "Unable to load competition details."
             )
           );
         }
 
-        if (!Array.isArray(payload)) {
-          throw new Error(
-            "Invalid participating clubs response."
-          );
-        }
-
-        const valid = payload.every(
-          (item) =>
-            isRecord(item) &&
-            typeof item.id === "string" &&
-            typeof item.name === "string"
-        );
-
-        if (!valid) {
-          throw new Error(
-            "The clubs response contains invalid records."
-          );
+        if (
+          !isRecord(payload) ||
+          payload.id !== competition.id ||
+          !Array.isArray(payload.teams) ||
+          !payload.teams.every(
+            (team) =>
+              isRecord(team) &&
+              typeof team.teamId === "string" &&
+              typeof team.teamName === "string"
+          )
+        ) {
+          throw new Error("Invalid competition details response.");
         }
 
         if (!controller.signal.aborted) {
-          setClubs(payload as Club[]);
+          setDetails(payload as CompetitionDetails);
         }
       } catch (err) {
         if (controller.signal.aborted) return;
@@ -279,7 +295,7 @@ function CompetitionDetailsModal({
         setError(
           err instanceof Error
             ? err.message
-            : "Unable to load participating clubs."
+            : "Unable to load competition details."
         );
       } finally {
         if (!controller.signal.aborted) {
@@ -288,7 +304,7 @@ function CompetitionDetailsModal({
       }
     }
 
-    void loadClubs();
+    void loadDetails();
 
     return () => controller.abort();
   }, [competition.id, retry]);
@@ -437,11 +453,11 @@ function CompetitionDetailsModal({
               {[
                 {
                   label: "Total Matches",
-                  value: competition.totalMatches,
+                  value: (details?.matchCount ?? competition.matchCount),
                 },
                 {
                   label: "Played",
-                  value: competition.playedMatches,
+                  value: (details?.playedMatchCount ?? competition.playedMatchCount),
                 },
                 {
                   label: "Pending",
@@ -479,13 +495,13 @@ function CompetitionDetailsModal({
                   </h3>
 
                   <p className="mt-1 text-xs text-[#8b98aa]">
-                    Registered teams in this competition
+                    Registered teams and their groups
                   </p>
                 </div>
               </div>
 
               <span className="rounded-lg border border-[#b7f56a]/15 bg-[#b7f56a]/10 px-3 py-1.5 text-xs font-semibold text-[#b7f56a]">
-                {competition.clubCount} Clubs
+                {details?.teamCount ?? competition.teamCount} Clubs
               </span>
             </div>
 
@@ -496,7 +512,7 @@ function CompetitionDetailsModal({
                     size={20}
                     className="animate-spin text-[#b7f56a]"
                   />
-                  Loading participating clubs...
+                  Loading participating teams...
                 </div>
               ) : error ? (
                 <div className="py-10 text-center">
@@ -519,7 +535,7 @@ function CompetitionDetailsModal({
                     Try again
                   </button>
                 </div>
-              ) : clubs.length === 0 ? (
+              ) : (details?.teams.length ?? 0) === 0 ? (
                 <div className="py-12 text-center">
                   <Shield
                     size={30}
@@ -527,43 +543,32 @@ function CompetitionDetailsModal({
                   />
 
                   <p className="mt-4 text-sm text-[#9ba8b7]">
-                    No clubs registered yet.
+                    No teams registered yet.
                   </p>
                 </div>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {clubs.map((club) => (
+                  {details?.teams.map((club) => (
                     <div
-                      key={club.id}
+                      key={club.teamId}
                       className="group flex min-w-0 items-center gap-4 rounded-xl border border-white/[0.07] bg-[#0b0e12] p-4 transition hover:border-[#b7f56a]/25 hover:bg-[#141b19]"
                     >
                       <ClubCrest
-                        logoUrl={club.logoUrl}
-                        name={club.name}
+                        logoUrl={null}
+                        name={club.teamName}
                         size="md"
                       />
 
                       <div className="min-w-0 flex-1">
                         <h4 className="truncate text-sm font-semibold text-white">
-                          {club.name}
+                          {club.teamName}
                         </h4>
 
-                        <p className="mt-1 text-xs text-[#8b98aa]">
-                          {club.country ||
-                            "Country not specified"}
-                        </p>
-
-                        <span
-                          className={`mt-2 inline-flex rounded-md px-2 py-1 text-[10px] font-semibold ${
-                            club.isDefault
-                              ? "bg-[#b7f56a]/10 text-[#b7f56a]"
-                              : "bg-blue-400/10 text-blue-300"
-                          }`}
-                        >
-                          {club.isDefault
-                            ? "Default Club"
-                            : "Private Club"}
-                        </span>
+                        {club.groupName && (
+                          <p className="mt-1 text-xs text-[#8b98aa]">
+                            Group {club.groupName}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -571,6 +576,13 @@ function CompetitionDetailsModal({
               )}
             </div>
           </div>
+
+          {details && (
+            <div className={`${panel} flex items-center justify-between p-5`}>
+              <span className="text-sm text-[#9ba8b7]">Knockout ties</span>
+              <span className="font-semibold text-white">{details.knockoutTieCount}</span>
+            </div>
+          )}
 
           <button
             type="button"
@@ -609,6 +621,46 @@ export default function AdminCompetitionsPage() {
 
   const [selected, setSelected] =
     useState<Competition | null>(null);
+
+  const [stats, setStats] = useState<CompetitionStats>(emptyStats);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadStats() {
+      setStatsLoading(true);
+      setStatsError("");
+      try {
+        const response = await fetch("/api/admin/competitions/stats", {
+          cache: "no-store",
+          credentials: "same-origin",
+          signal: controller.signal,
+        });
+        const payload: unknown = await response.json().catch(() => null);
+        if (!response.ok) {
+          throw new Error(errorMessage(payload, "Unable to load statistics."));
+        }
+        if (
+          !isRecord(payload) ||
+          !Object.keys(emptyStats).every(
+            (key) => typeof payload[key] === "number"
+          )
+        ) {
+          throw new Error("Invalid competition statistics response.");
+        }
+        if (!controller.signal.aborted) setStats(payload as CompetitionStats);
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          setStatsError(err instanceof Error ? err.message : "Unable to load statistics.");
+        }
+      } finally {
+        if (!controller.signal.aborted) setStatsLoading(false);
+      }
+    }
+    void loadStats();
+    return () => controller.abort();
+  }, [refreshKey]);
 
   // Debounce search input.
   useEffect(() => {
@@ -711,54 +763,16 @@ export default function AdminCompetitionsPage() {
   }, [page, search, refreshKey]);
 
   // ==========================================
-  // PAGE STATISTICS
+  // PLATFORM-WIDE STATISTICS
   // ==========================================
 
-  const clubEntries = competitions.reduce(
-    (sum, c) => sum + c.clubCount,
-    0
-  );
-
-  const playedMatches = competitions.reduce(
-    (sum, c) => sum + c.playedMatches,
-    0
-  );
-
-  const pendingMatches = competitions.reduce(
-    (sum, c) =>
-      sum +
-      Math.max(
-        0,
-        c.totalMatches - c.playedMatches
-      ),
-    0
-  );
-
   const metrics = [
-    {
-      label: "Competitions",
-      value: totalCount,
-      note: "Matching competitions",
-      icon: Trophy,
-    },
-    {
-      label: "Club Entries",
-      value: clubEntries,
-      note: "On current page",
-      icon: Shield,
-    },
-    {
-      label: "Matches Played",
-      value: playedMatches,
-      note: "On current page",
-      icon: CheckCircle2,
-    },
-    {
-      label: "Pending Matches",
-      value: pendingMatches,
-      note: "On current page",
-      icon: Clock3,
-    },
+    { label: "Competitions", value: stats.totalCompetitions, note: "Across the platform", icon: Trophy },
+    { label: "Creators", value: stats.totalCreators, note: "Unique competition owners", icon: UserRound },
+    { label: "Team Entries", value: stats.totalParticipations, note: "Across all competitions", icon: Shield },
+    { label: "Total Matches", value: stats.totalMatches, note: "League-phase fixtures", icon: Activity },
+    { label: "Matches Played", value: stats.playedMatches, note: "Completed fixtures", icon: CheckCircle2 },
+    { label: "Pending Matches", value: stats.pendingMatches, note: "Remaining fixtures", icon: Clock3 },
   ];
 
   // ==========================================
@@ -806,15 +820,22 @@ export default function AdminCompetitionsPage() {
       </div>
 
       {/* METRICS */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         {metrics.map((metric) => (
           <MetricCard
             key={metric.label}
             {...metric}
-            loading={loading}
+            loading={statsLoading}
           />
         ))}
       </div>
+
+      {statsError && (
+        <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-red-400/20 bg-red-400/5 px-4 py-3 text-sm text-red-300">
+          <span>{statsError}</span>
+          <button type="button" onClick={refresh} className="underline">Retry</button>
+        </div>
+      )}
 
       {/* SEARCH */}
       <div className={`${panel} p-5`}>
@@ -825,7 +846,7 @@ export default function AdminCompetitionsPage() {
             </h2>
 
             <p className="mt-1 text-xs text-[#8b98aa]">
-              Search by competition name or season.
+              Search by competition name, season, creator name or email.
             </p>
           </div>
 
@@ -1005,7 +1026,7 @@ export default function AdminCompetitionsPage() {
                       {/* CLUB COUNT */}
                       <td className="px-5 py-5">
                         <span className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-white">
-                          {competition.clubCount}
+                          {competition.teamCount}
                         </span>
                       </td>
 
@@ -1014,8 +1035,8 @@ export default function AdminCompetitionsPage() {
                         <div className="w-40 space-y-2">
                           <div className="flex items-center justify-between text-xs">
                             <span className="text-[#9ba8b7]">
-                              {competition.playedMatches}/
-                              {competition.totalMatches}
+                              {competition.playedMatchCount}/
+                              {competition.matchCount}
                             </span>
 
                             <span className="font-semibold text-[#b7f56a]">
