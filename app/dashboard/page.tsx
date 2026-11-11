@@ -8,7 +8,6 @@ import {
   Activity,
   ArrowRight,
   ArrowUpRight,
-  Bell,
   CalendarDays,
   CalendarClock,
   ChartNoAxesCombined,
@@ -37,6 +36,7 @@ import KnockoutStage from "@/components/dashboard/knockout-stage";
 import Teams from "@/components/dashboard/teams";
 import CreateCompetition from "@/components/dashboard/create-competition";
 import Settings from "@/components/dashboard/settings";
+import NotificationBell from "@/components/dashboard/notification-bell";
 
 // =====================================================
 // TYPES
@@ -699,7 +699,6 @@ export default function DashboardPage() {
 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
@@ -730,7 +729,6 @@ export default function DashboardPage() {
     setSearchOpen(false);
     setSearchQuery("");
     setAccountMenuOpen(false);
-    setNotificationsOpen(false);
 
     const url = new URL(window.location.href);
 
@@ -944,8 +942,7 @@ export default function DashboardPage() {
       if (event.key === "Escape") {
         setSearchOpen(false);
         setAccountMenuOpen(false);
-        setNotificationsOpen(false);
-        setMobileNavOpen(false);
+            setMobileNavOpen(false);
       }
     }
 
@@ -1230,27 +1227,7 @@ export default function DashboardPage() {
                 <Search size={17} />
               </button>
 
-              <div className="relative">
-                <button
-                  type="button"
-                  aria-label="Notifications"
-                  aria-expanded={notificationsOpen}
-                  onClick={() => setNotificationsOpen(!notificationsOpen)}
-                  className="rounded-lg p-2 text-[#8b97a8] hover:bg-white/[0.05]"
-                >
-                  <Bell size={17} />
-                </button>
-
-                {notificationsOpen && (
-                  <div className="absolute right-0 top-12 z-50 w-64 rounded-xl border border-white/[0.09] bg-[#10151b] p-4 shadow-2xl">
-                    <p className="text-xs font-semibold">Notifications</p>
-
-                    <p className="mt-2 text-xs leading-5 text-[#8793a4]">
-                      Competition notifications will appear here when connected.
-                    </p>
-                  </div>
-                )}
-              </div>
+              <NotificationBell />
 
               <div className="relative">
                 <button
