@@ -21,7 +21,7 @@ import {
   Search,
   RefreshCw,
   AlertCircle,
-  Settings,
+  SettingsIcon,
   ShieldCheck,
   Trophy,
   Users,
@@ -36,6 +36,7 @@ import Results from "@/components/dashboard/results";
 import KnockoutStage from "@/components/dashboard/knockout-stage";
 import Teams from "@/components/dashboard/teams";
 import CreateCompetition from "@/components/dashboard/create-competition";
+import Settings from "@/components/dashboard/settings";
 
 // =====================================================
 // TYPES
@@ -157,7 +158,7 @@ const navigation: {
     items: [
       {
         label: "Settings",
-        icon: Settings,
+        icon: SettingsIcon,
         section: "settings",
       },
     ],
@@ -1173,7 +1174,7 @@ export default function DashboardPage() {
             onClick={() => selectSection("settings")}
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-xs text-[#98a3b2] hover:bg-white/[0.04]"
           >
-            <Settings size={15} />
+            <SettingsIcon size={15} />
             Preferences
           </button>
         </div>
@@ -1289,7 +1290,7 @@ export default function DashboardPage() {
                       }}
                       className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-xs text-[#a9b4c1] hover:bg-white/[0.05]"
                     >
-                      <Settings size={14} />
+                      <SettingsIcon size={14} />
                       Account settings
                     </button>
 
@@ -1435,6 +1436,8 @@ export default function DashboardPage() {
   <KnockoutStage
     initialCompetitionId={summary?.activeCompetition?.id}
   />
+) : activeSection === "settings" ? (
+  <Settings />
 ) : activeSection !== "dashboard" ? (
             <section className="flex min-h-[60vh] flex-col items-center justify-center text-center">
               <FootballBall
