@@ -4,8 +4,6 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { validateCsrfOrigin } from "@/lib/security/csrf";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 const SESSION_COOKIE = "footballsim_session";
 const REQUEST_TIMEOUT_MS = 15_000;
