@@ -27,12 +27,91 @@ type Match = {
   competitionId: string;
   homeTeamName: string;
   awayTeamName: string;
+  homeTeamId?: string;
+  awayTeamId?: string;
+  homeTeamLogoUrl?: string | null;
+  awayTeamLogoUrl?: string | null;
   homeScore: number | null;
   awayScore: number | null;
   isPlayed: boolean;
   matchDay: number;
   kickoffUtc: string | null;
 };
+
+type TeamLogo = {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+};
+
+const backendBase = (
+  process.env.NEXT_PUBLIC_FOOTBALLSIM_API_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:5295"
+).replace(/\/+$/, "");
+
+function resolveLogoUrl(value: string | null | undefined): string | null {
+  if (!value?.trim()) return null;
+  const logo = value.trim().replace(/\\/g, "/");
+  if (/^https?:\/\//i.test(logo)) return logo;
+  if (logo.startsWith("//") || /^[a-z][a-z0-9+.-]*:/i.test(logo)) {
+    return null;
+  }
+  try {
+    return new URL(logo.startsWith("/") ? logo : `/${logo}`, backendBase).toString();
+  } catch {
+    return null;
+  }
+}
+
+function parseTeamLogos(value: unknown): TeamLogo[] {
+  const records = Array.isArray(value)
+    ? value
+    : isRecord(value) && Array.isArray(value.items)
+      ? value.items
+      : isRecord(value) && Array.isArray(value.teams)
+        ? value.teams
+        : [];
+
+  return records.flatMap((item): TeamLogo[] => {
+    if (!isRecord(item) || typeof item.id !== "string" || typeof item.name !== "string") {
+      return [];
+    }
+    return [{
+      id: item.id,
+      name: item.name,
+      logoUrl: typeof item.logoUrl === "string" ? item.logoUrl : null,
+    }];
+  });
+}
+
+function ClubCrest({ logoUrl, name, size = "normal" }: {
+  logoUrl?: string | null;
+  name: string;
+  size?: "normal" | "small";
+}) {
+  const resolved = resolveLogoUrl(logoUrl);
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const showImage = resolved !== null && failedUrl !== resolved;
+  return (
+    <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#b7f56a]/15 bg-[#b7f56a]/[0.06] text-[#b7f56a] ${size === "small" ? "h-9 w-9" : "h-11 w-11"}`}>
+      {showImage ? (
+        // Use a native img for both uploaded backend images and external crest providers.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={resolved}
+          alt={`${name} crest`}
+          className="h-full w-full object-contain p-1"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => setFailedUrl(resolved)}
+        />
+      ) : (
+        <Shield size={size === "small" ? 17 : 21} aria-hidden="true" />
+      )}
+    </span>
+  );
+}
 
 type Filter = "all" | "completed" | "scheduled";
 
@@ -184,6 +263,7 @@ export default function Results({
   >([]);
   const [competitionId, setCompetitionId] = useState("");
   const [matches, setMatches] = useState<Match[]>([]);
+  const [teams, setTeams] = useState<TeamLogo[]>([]);
 
   const [loadingCompetitions, setLoadingCompetitions] =
     useState(true);
@@ -332,6 +412,51 @@ export default function Results({
 
     return () => controller.abort();
   }, [competitionId, refreshKey]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadTeamLogos() {
+      try {
+        const response = await fetch("/api/teams", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const payload: unknown = await response.json();
+        if (!controller.signal.aborted) setTeams(parseTeamLogos(payload));
+      } catch {
+        // Logo loading must not block match results.
+      }
+    }
+    void loadTeamLogos();
+    return () => controller.abort();
+  }, [refreshKey]);
+
+  const logoById = useMemo(() => new Map(
+    teams.map((team) => [team.id.trim().toLowerCase(), team.logoUrl])
+  ), [teams]);
+
+  // Only use a name fallback when it identifies exactly one team.
+  const logoByName = useMemo(() => {
+    const names = new Map<string, string | null>();
+    const ambiguous = new Set<string>();
+    for (const team of teams) {
+      const name = team.name.trim().toLowerCase();
+      if (names.has(name)) ambiguous.add(name);
+      else names.set(name, team.logoUrl);
+    }
+    for (const name of ambiguous) names.delete(name);
+    return names;
+  }, [teams]);
+
+  function getCrest(match: Match, side: "home" | "away") {
+    const id = side === "home" ? match.homeTeamId : match.awayTeamId;
+    const direct = side === "home" ? match.homeTeamLogoUrl : match.awayTeamLogoUrl;
+    const name = side === "home" ? match.homeTeamName : match.awayTeamName;
+    if (direct) return direct;
+    if (id) return logoById.get(id.trim().toLowerCase()) ?? null;
+    return logoByName.get(name.trim().toLowerCase()) ?? null;
+  }
 
   const selectedCompetition = competitions.find(
     (item) => item.id === competitionId
@@ -800,9 +925,7 @@ export default function Results({
 
                     <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 px-4 py-7">
                       <div className="flex min-w-0 flex-col items-center gap-3 text-center">
-                        <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#b7f56a]/15 bg-[#b7f56a]/[0.06] text-[#b7f56a]">
-                          <Shield size={21} />
-                        </span>
+                        <ClubCrest name={match.homeTeamName} logoUrl={getCrest(match, "home")} />
                         <span className="text-xs font-semibold leading-5 sm:text-sm">
                           {match.homeTeamName}
                         </span>
@@ -819,9 +942,7 @@ export default function Results({
                       </div>
 
                       <div className="flex min-w-0 flex-col items-center gap-3 text-center">
-                        <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#b7f56a]/15 bg-[#b7f56a]/[0.06] text-[#b7f56a]">
-                          <Shield size={21} />
-                        </span>
+                        <ClubCrest name={match.awayTeamName} logoUrl={getCrest(match, "away")} />
                         <span className="text-xs font-semibold leading-5 sm:text-sm">
                           {match.awayTeamName}
                         </span>
@@ -937,7 +1058,10 @@ export default function Results({
                       htmlFor="home-result-score"
                       className="mb-3 block text-xs font-medium text-white"
                     >
-                      {editing.homeTeamName}
+                      <span className="flex items-center gap-2">
+                        <ClubCrest name={editing.homeTeamName} logoUrl={getCrest(editing, "home")} size="small" />
+                        {editing.homeTeamName}
+                      </span>
                     </label>
 
                     <input
@@ -963,7 +1087,10 @@ export default function Results({
                       htmlFor="away-result-score"
                       className="mb-3 block text-xs font-medium text-white"
                     >
-                      {editing.awayTeamName}
+                      <span className="flex items-center gap-2">
+                        <ClubCrest name={editing.awayTeamName} logoUrl={getCrest(editing, "away")} size="small" />
+                        {editing.awayTeamName}
+                      </span>
                     </label>
 
                     <input
@@ -1022,8 +1149,11 @@ export default function Results({
               <>
                 <div className="mt-6 rounded-xl border border-white/[0.08] bg-[#0b0e12] p-5">
                   <p className="text-center text-xs text-[#8b98aa]">
-                    {editing.homeTeamName} vs{" "}
-                    {editing.awayTeamName}
+                    <span className="inline-flex items-center justify-center gap-3">
+                      <ClubCrest name={editing.homeTeamName} logoUrl={getCrest(editing, "home")} size="small" />
+                      {editing.homeTeamName} vs {editing.awayTeamName}
+                      <ClubCrest name={editing.awayTeamName} logoUrl={getCrest(editing, "away")} size="small" />
+                    </span>
                   </p>
 
                   <div className="mt-5 text-center">
