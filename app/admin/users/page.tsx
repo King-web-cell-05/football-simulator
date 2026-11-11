@@ -1,18 +1,13 @@
-
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
 import {
   Search,
-  Users,
   UserCheck,
   UserX,
-  ShieldCheck,
   ChevronLeft,
   ChevronRight,
   RefreshCw,
-  CalendarDays,
-  Mail,
   X,
 } from "lucide-react";
 
@@ -87,6 +82,13 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] =
     useState<User | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [pendingAction, setPendingAction] = useState<{
+    user: User;
+    action: "suspend" | "reactivate";
+  } | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [notice, setNotice] = useState("");
 
   const loadUsers = useCallback(
     async (signal: AbortSignal) => {
@@ -161,6 +163,57 @@ export default function AdminUsersPage() {
     };
   }, [loadUsers, refreshKey]);
 
+  function requestAction(user: User) {
+    if (user.role.toLowerCase() === "admin") return;
+    setActionError("");
+    setNotice("");
+    setPendingAction({
+      user,
+      action: user.isSuspended ? "reactivate" : "suspend",
+    });
+  }
+
+  async function confirmAction() {
+    if (!pendingAction || actionLoading) return;
+
+    const { user, action } = pendingAction;
+    setActionLoading(true);
+    setActionError("");
+
+    try {
+      const response = await fetch(
+        `/api/admin/users/${encodeURIComponent(user.id)}/${action}`,
+        { method: "PATCH", cache: "no-store" }
+      );
+
+      const result: unknown = await response.json().catch(() => null);
+      const message =
+        result && typeof result === "object" && "message" in result &&
+        typeof result.message === "string"
+          ? result.message
+          : null;
+
+      if (!response.ok) {
+        throw new Error(
+          message ?? (response.status === 401
+            ? "Your session has expired. Please sign in again."
+            : response.status === 403
+              ? "Administrator access required or this account is protected."
+              : `Unable to ${action} this account.`)
+        );
+      }
+
+      setNotice(message ?? `Account ${action === "suspend" ? "suspended" : "reactivated"} successfully.`);
+      setPendingAction(null);
+      setSelectedUser(null);
+      setRefreshKey((previous) => previous + 1);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Action failed. Please try again.");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
   function updateSearch(value: string) {
     setSearch(value);
     setPage(1);
@@ -203,6 +256,13 @@ export default function AdminUsersPage() {
           Refresh
         </button>
       </div>
+
+      {notice && (
+        <div role="status" className="flex items-center justify-between gap-3 rounded-xl border border-lime-300/20 bg-lime-300/10 px-4 py-3 text-sm text-lime-200">
+          <span>{notice}</span>
+          <button type="button" onClick={() => setNotice("")} aria-label="Dismiss notification"><X className="h-4 w-4" /></button>
+        </div>
+      )}
 
       {/* TOOLBAR */}
       <div className="rounded-2xl border border-white/10 bg-[#11161D] p-4 sm:p-5">
@@ -374,6 +434,19 @@ export default function AdminUsersPage() {
                       >
                         View details
                       </button>
+                      {user.role.toLowerCase() !== "admin" && (
+                        <button
+                          type="button"
+                          onClick={() => requestAction(user)}
+                          className={`ml-2 rounded-lg border px-3 py-2 text-xs font-medium transition ${
+                            user.isSuspended
+                              ? "border-lime-300/25 text-lime-300 hover:bg-lime-300/10"
+                              : "border-red-300/25 text-red-300 hover:bg-red-300/10"
+                          }`}
+                        >
+                          {user.isSuspended ? "Reactivate" : "Suspend"}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -512,13 +585,82 @@ export default function AdminUsersPage() {
               ))}
             </div>
 
+            {selectedUser.role.toLowerCase() !== "admin" && (
+              <button
+                type="button"
+                onClick={() => requestAction(selectedUser)}
+                className={`mt-6 w-full rounded-xl border py-3 text-sm font-semibold transition ${
+                  selectedUser.isSuspended
+                    ? "border-lime-300/30 text-lime-300 hover:bg-lime-300/10"
+                    : "border-red-300/30 text-red-300 hover:bg-red-300/10"
+                }`}
+              >
+                {selectedUser.isSuspended ? "Reactivate account" : "Suspend account"}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setSelectedUser(null)}
-              className="mt-6 w-full rounded-xl bg-lime-300 py-3 text-sm font-semibold text-black transition hover:bg-lime-200"
+              className="mt-3 w-full rounded-xl bg-lime-300 py-3 text-sm font-semibold text-black transition hover:bg-lime-200"
             >
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRM ACCOUNT ACTION */}
+      {pendingAction && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !actionLoading) {
+              setPendingAction(null);
+            }
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-account-action"
+            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#11161D] p-6 shadow-2xl"
+          >
+            <div className="mb-4 flex items-center gap-3">
+              <div className={`rounded-xl p-3 ${pendingAction.action === "suspend" ? "bg-red-300/10 text-red-300" : "bg-lime-300/10 text-lime-300"}`}>
+                {pendingAction.action === "suspend" ? <UserX className="h-5 w-5" /> : <UserCheck className="h-5 w-5" />}
+              </div>
+              <h2 id="confirm-account-action" className="text-lg font-semibold text-white">
+                {pendingAction.action === "suspend" ? "Suspend account?" : "Reactivate account?"}
+              </h2>
+            </div>
+            <p className="text-sm leading-6 text-slate-400">
+              {pendingAction.action === "suspend"
+                ? `Suspend ${pendingAction.user.fullName}? Their existing sessions will be invalidated and they will be unable to sign in until reactivated.`
+                : `Reactivate ${pendingAction.user.fullName}? They will be able to sign in again, subject to normal account verification requirements.`}
+            </p>
+            {actionError && (
+              <p role="alert" className="mt-4 rounded-lg border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-300">
+                {actionError}
+              </p>
+            )}
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                disabled={actionLoading}
+                onClick={() => setPendingAction(null)}
+                className="rounded-xl border border-white/10 px-4 py-2.5 text-sm text-slate-200 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={actionLoading}
+                onClick={() => void confirmAction()}
+                className={`rounded-xl px-4 py-2.5 text-sm font-semibold text-black disabled:opacity-50 ${pendingAction.action === "suspend" ? "bg-red-300 hover:bg-red-200" : "bg-lime-300 hover:bg-lime-200"}`}
+              >
+                {actionLoading ? "Processing..." : pendingAction.action === "suspend" ? "Confirm suspension" : "Confirm reactivation"}
+              </button>
+            </div>
           </div>
         </div>
       )}

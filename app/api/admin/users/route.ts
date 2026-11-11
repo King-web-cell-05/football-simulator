@@ -11,6 +11,7 @@ const ALLOWED_STATUSES = new Set([
   "all",
   "active",
   "suspended",
+  "unverified",
 ]);
 
 function jsonResponse(

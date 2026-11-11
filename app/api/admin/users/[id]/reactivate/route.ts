@@ -3,8 +3,6 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { validateCsrfOrigin } from "@/lib/security/csrf";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
