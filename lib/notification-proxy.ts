@@ -8,7 +8,7 @@ const apiBase = (
   "http://localhost:5295"
 ).replace(/\/+$/, "");
 
-type NotificationMethod = "GET" | "PATCH" | "DELETE";
+type NotificationMethod = "GET" | "POST" | "PATCH" | "DELETE";
 
 export async function notificationProxy(
   request: NextRequest,
@@ -40,7 +40,6 @@ export async function notificationProxy(
       }
     );
 
-    // Handle endpoints that return no response body.
     if (response.status === 204) {
       return new NextResponse(null, { status: 204 });
     }
