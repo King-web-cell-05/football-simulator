@@ -32,7 +32,7 @@ const siteConfig = {
     "Create football competitions, generate fixtures, simulate matches, and track league standings. Build your own football universe with FootballSim.",
   url:
     process.env.NEXT_PUBLIC_SITE_URL ||
-    "http://localhost:3000",
+    "https://king-footballsimulator.vercel.app",
   keywords: [
     "FootballSim",
     "Football Simulator",
@@ -49,7 +49,7 @@ const siteConfig = {
 };
 
 // ==========================================
-// SEO METADATA
+// SEO + PWA METADATA
 // ==========================================
 
 export const metadata: Metadata = {
@@ -71,6 +71,18 @@ export const metadata: Metadata = {
   creator: "FootballSim",
 
   publisher: "FootballSim",
+
+  manifest: "/manifest.webmanifest",
+
+  appleWebApp: {
+    capable: true,
+    title: "FootballSim",
+    statusBarStyle: "black-translucent",
+  },
+
+  formatDetection: {
+    telephone: false,
+  },
 
   robots: {
     index: true,
@@ -100,8 +112,30 @@ export const metadata: Metadata = {
   },
 
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      {
+        url: "/favicon.ico",
+        sizes: "any",
+      },
+      {
+        url: "/icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
+      },
+      {
+        url: "/icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+      },
+    ],
     shortcut: "/favicon.ico",
+    apple: [
+      {
+        url: "/apple-touch-icon.png",
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
   },
 };
 

@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import InstallAppButton from "@/components/pwa/install-app-button";
 import { Suspense, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
@@ -507,7 +508,7 @@ export default function Home() {
               competition, managed in one place.
             </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="mt-8 flex flex-col flex-wrap gap-3 sm:flex-row sm:items-center">
               <Link
                 href="/signup"
                 className="group inline-flex min-h-[51px] items-center justify-center gap-2 rounded-xl bg-[#B7F56A] px-6 text-[12px] font-bold text-[#08090D] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#CAFF8D] hover:shadow-[0_10px_35px_rgba(183,245,106,0.13)]"
@@ -526,6 +527,8 @@ export default function Home() {
                 <CirclePlay size={17} className="text-[#B7F56A]" />
                 Explore the platform
               </Link>
+
+              <InstallAppButton />
             </div>
 
             <div className="mt-9 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-white/[0.08] pt-6">
