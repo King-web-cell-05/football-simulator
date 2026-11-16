@@ -3,6 +3,8 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import FootballSimStartup from "@/components/shared/footballsim-startup";
+
 import "./globals.css";
 
 // ==========================================
@@ -68,7 +70,7 @@ export const metadata: Metadata = {
 
   category: "sports",
 
-  creator: "FootballSim",
+  creator: "Dada Kingsley Oluwasanmi",
 
   publisher: "FootballSim",
 
@@ -184,6 +186,10 @@ export default function RootLayout({
           selection:text-[#070a0e]
         "
       >
+        {/* Premium FootballSim startup introduction */}
+        <FootballSimStartup />
+
+        {/* Application content */}
         {children}
       </body>
     </html>
