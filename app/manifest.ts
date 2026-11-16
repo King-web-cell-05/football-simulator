@@ -3,8 +3,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "FootballSim",
-    short_name: "FootballSim",
+    name: "King FootballSim",
+    short_name: "King FootballSim",
     description:
       "Manage football competitions, generate fixtures, simulate matches, and track standings.",
     start_url: "/",
