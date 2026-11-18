@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
     name: "FootballSim — Football Competition Simulator",
-    short_name: "FootballSim",
+    short_name: "King FootballSim",
     description:
       "Create and manage football competitions, generate fixtures, simulate matches, and track live standings with FootballSim.",
 
